@@ -1,8 +1,8 @@
 # micron-parser-go
 
-Blazingly fast Micron parser and HTML renderer for Go and WebAssembly, based on [micron-parser-js](https://github.com/RFnexus/micron-parser-js).
+Blazingly fast Micron parser and HTML renderer for Go and WebAssembly, based on [micron-parser-js](https://github.com/RFnexus/micron-parser-js). For Go (library) or web based (WASM) applications.
 
-For Go (library) or web based (WASM) applications.
+Playground: https://micron-parser-go.quad4.io/
 
 ## Requirements
 
@@ -147,7 +147,8 @@ The WASM program registers these and then blocks on the Go scheduler (`select {}
 - Goroutine leak guard checks repeated conversion paths
 - JS interop test compares output signatures against `micron-parser-js`
 - Benchmarks: `make bench` (native Go + reference JS, NomadNet corpus)
-- Property based test
+- Property-based tests in `micron/property_test.go`
+- `make fuzz` runs every fuzz target in `micron/fuzz_test.go` (override duration with `FUZZTIME=30s`)
 
 ## License
 
