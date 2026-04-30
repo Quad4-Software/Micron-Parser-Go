@@ -30,11 +30,23 @@ func splitAfterSpaceSegments(s string) []string {
 
 func (p *Parser) splitAtSpaces(line string) string {
 	var b strings.Builder
+	p.appendSplitAtSpaces(&b, line)
+	return b.String()
+}
+
+func (p *Parser) forceMonospace(line string) string {
+	if !p.ForceMonospace {
+		return htmlText(line)
+	}
+	var b strings.Builder
+	p.appendForceMonospace(&b, line)
+	return b.String()
+}
+
+func (p *Parser) appendSplitAtSpaces(b *strings.Builder, line string) {
 	if line == "" {
-		b.WriteString(`<span class="Mu-mws">`)
-		b.WriteString(p.forceMonospace(""))
-		b.WriteString(`</span>`)
-		return b.String()
+		b.WriteString(`<span class="Mu-mws"></span>`)
+		return
 	}
 	start := 0
 	for start < len(line) {
@@ -44,18 +56,13 @@ func (p *Parser) splitAtSpaces(line string) string {
 			end = start + rel + 1
 		}
 		b.WriteString(`<span class="Mu-mws">`)
-		b.WriteString(p.forceMonospace(line[start:end]))
+		p.appendForceMonospace(b, line[start:end])
 		b.WriteString(`</span>`)
 		start = end
 	}
-	return b.String()
 }
 
-func (p *Parser) forceMonospace(line string) string {
-	if !p.ForceMonospace {
-		return htmlText(line)
-	}
-	var b strings.Builder
+func (p *Parser) appendForceMonospace(b *strings.Builder, line string) {
 	for len(line) > 0 {
 		r, sz := utf8.DecodeRuneInString(line)
 		line = line[sz:]
@@ -76,5 +83,4 @@ func (p *Parser) forceMonospace(line string) string {
 		}
 		b.WriteString(`</span>`)
 	}
-	return b.String()
 }
