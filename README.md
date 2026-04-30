@@ -1,6 +1,8 @@
 # micron-parser-go
 
-Micron parser and HTML renderer for Go and WebAssembly, based on [micron-parser-js](https://github.com/RFnexus/micron-parser-js).
+Blazingly fast Micron parser and HTML renderer for Go and WebAssembly, based on [micron-parser-js](https://github.com/RFnexus/micron-parser-js).
+
+For Go (library) or web based (WASM) applications.
 
 ## Requirements
 
@@ -91,6 +93,8 @@ Benchmarks use the **NomadNet guide** micron source from Micron-Parser-JS.
 | Implementation | Environment | Mean time / conversion | Notes |
 |----------------|---------------|------------------------|--------|
 | This package (Go) | `go test` native amd64 | ~2.36 ms | 10× `BenchmarkConvertNomadNetGuide` runs; ~2.19–2.57 ms/op, ~4.71 MB/op, 5203 allocs/op |
+| This package (Go WASM) | Browser `bench.html` | ~3.74 ms | 10 measured runs; ~3.48–4.05 ms; ~2.87 MiB/s |
+| Reference [micron-parser-js](https://github.com/RFnexus/micron-parser-js) | Browser `bench.html` | ~41.11 ms | 10 measured runs; ~38.44–43.79 ms; ~0.26 MiB/s |
 | Reference [micron-parser-js](https://github.com/RFnexus/micron-parser-js) | Node + DOM stub | ~21.0 ms | 10 measured runs; ~19.7–25.9 ms; ~0.51 MiB/s mean throughput |
 
 **WebAssembly:** The browser build uses the same Go code as the native benchmark, but timing includes JS/WASM call overhead and is strongly browser-dependent. It will not match the `go test` numbers above.
