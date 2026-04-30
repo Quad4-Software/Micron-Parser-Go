@@ -4,7 +4,7 @@
 package micron
 
 import (
-	"fmt"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 )
@@ -57,10 +57,14 @@ func (p *Parser) parseLine(line string, s *State) lineResult {
 					var hs strings.Builder
 					hs.WriteString(`<div style="display:inline-block;width:100%;`)
 					if fg != "" {
-						fmt.Fprintf(&hs, "color:%s;", fg)
+						hs.WriteString("color:")
+						hs.WriteString(fg)
+						hs.WriteByte(';')
 					}
 					if bg != "" {
-						fmt.Fprintf(&hs, "background-color:%s;", bg)
+						hs.WriteString("background-color:")
+						hs.WriteString(bg)
+						hs.WriteByte(';')
 					}
 					hs.WriteString(`"><div style="`)
 					hs.WriteString(sectionIndentStyle(s))
@@ -78,11 +82,15 @@ func (p *Parser) parseLine(line string, s *State) lineResult {
 					var b strings.Builder
 					b.WriteString(`<hr style="all:revert;`)
 					if fg != "" {
-						fmt.Fprintf(&b, "border-color:%s;", fg)
+						b.WriteString("border-color:")
+						b.WriteString(fg)
+						b.WriteByte(';')
 					}
 					b.WriteString(`margin:0.5em 0.5em 0.5em 0.5em;`)
 					if bg != "" {
-						fmt.Fprintf(&b, "box-shadow:0 0 0 0.5em %s;", bg)
+						b.WriteString("box-shadow:0 0 0 0.5em ")
+						b.WriteString(bg)
+						b.WriteByte(';')
 					}
 					b.WriteString(sectionIndentStyle(s))
 					b.WriteString(`"/>`)
@@ -95,11 +103,15 @@ func (p *Parser) parseLine(line string, s *State) lineResult {
 				var b strings.Builder
 				b.WriteString(`<div style="white-space:pre;white-space:nowrap;overflow:hidden;width:100%;`)
 				if fg != "" {
-					fmt.Fprintf(&b, "color:%s;", fg)
+					b.WriteString("color:")
+					b.WriteString(fg)
+					b.WriteByte(';')
 				}
 				if s.BGColor != s.DefaultBG && s.BGColor != "default" {
 					if bg := ColorToCSS(s.BGColor); bg != "" {
-						fmt.Fprintf(&b, "background-color:%s;", bg)
+						b.WriteString("background-color:")
+						b.WriteString(bg)
+						b.WriteByte(';')
 					}
 				}
 				b.WriteString(sectionIndentStyle(s))
@@ -123,9 +135,13 @@ func (p *Parser) parseLine(line string, s *State) lineResult {
 		if s.BGColor != s.DefaultBG && s.BGColor != "default" {
 			bg := ColorToCSS(s.BGColor)
 			if bg != "" {
-				return lineResult{Kind: lineHTML, HTML: fmt.Sprintf(
-					`<div style="background-color:%s;width:100%%;display:block;">%s</div>`,
-					bg, wrapped)}
+				var out strings.Builder
+				out.WriteString(`<div style="background-color:`)
+				out.WriteString(bg)
+				out.WriteString(`;width:100%;display:block;">`)
+				out.WriteString(wrapped)
+				out.WriteString(`</div>`)
+				return lineResult{Kind: lineHTML, HTML: out.String()}
 			}
 		}
 		return lineResult{Kind: lineHTML, HTML: wrapped}
@@ -134,9 +150,15 @@ func (p *Parser) parseLine(line string, s *State) lineResult {
 	if s.BGColor != s.DefaultBG && s.BGColor != "default" {
 		bg := ColorToCSS(s.BGColor)
 		if bg != "" {
-			return lineResult{Kind: lineHTML, HTML: fmt.Sprintf(
-				`<div style="background-color:%s;width:100%%;display:block;height:1.2em;"><div style="%s">%s</div></div>`,
-				bg, strings.TrimSuffix(sectionIndentStyle(s), ";"), br)}
+			var out strings.Builder
+			out.WriteString(`<div style="background-color:`)
+			out.WriteString(bg)
+			out.WriteString(`;width:100%;display:block;height:1.2em;"><div style="`)
+			out.WriteString(strings.TrimSuffix(sectionIndentStyle(s), ";"))
+			out.WriteString(`">`)
+			out.WriteString(br)
+			out.WriteString(`</div></div>`)
+			return lineResult{Kind: lineHTML, HTML: out.String()}
 		}
 	}
 	return lineResult{Kind: lineHTML, HTML: br}
@@ -150,5 +172,9 @@ func sectionIndentStyle(s *State) string {
 	if ind <= 0 {
 		return ""
 	}
-	return fmt.Sprintf("margin-left:%.1fem;", float64(ind)*0.6)
+	var b strings.Builder
+	b.WriteString("margin-left:")
+	b.WriteString(strconv.FormatFloat(float64(ind)*0.6, 'f', 1, 64))
+	b.WriteString("em;")
+	return b.String()
 }
