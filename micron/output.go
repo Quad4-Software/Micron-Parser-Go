@@ -11,9 +11,6 @@ func (p *Parser) makeOutput(s *State, line string) []linePart {
 			line = "`="
 		}
 		st := p.stateToStyle(s)
-		if p.ForceMonospace {
-			return []linePart{{style: st, html: p.splitAtSpaces(line)}}
-		}
 		return []linePart{{style: st, text: line}}
 	}
 
@@ -31,11 +28,7 @@ func (p *Parser) makeOutput(s *State, line string) []linePart {
 		partStr := part.String()
 		part.Reset()
 		st := p.stateToStyle(s)
-		if p.ForceMonospace {
-			out = append(out, linePart{style: st, html: p.splitAtSpaces(partStr)})
-		} else {
-			out = append(out, linePart{style: st, text: partStr})
-		}
+		out = append(out, linePart{style: st, text: partStr})
 	}
 
 	for i < len(line) {
