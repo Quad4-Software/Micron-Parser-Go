@@ -138,7 +138,7 @@ The WASM program registers these and then blocks on the Go scheduler (`select {}
 - **`window.onMicronLink`** — Optional. If defined, the demo calls it when the user activates a rendered Micron link (`data-action="openNode"`). Receives `(payload: object, element: Element)` where `payload` is the JSON from `micronResolveLink`. Use this to route in-app navigation, logging, or analytics without forking the stock HTML.
 - **Preview container** — Host pages should keep a single preview root (e.g. `#preview`) so `micronCollectFields` and `micronResolveLink` resolve inputs consistently.
 
-## Quality and verification
+## Quality, verification and security
 
 - Unit tests and edge/smoke suites are in `micron/*_test.go`
 - Security tests cover HTML escaping and attribute escaping
@@ -147,6 +147,7 @@ The WASM program registers these and then blocks on the Go scheduler (`select {}
 - Goroutine leak guard checks repeated conversion paths
 - JS interop test compares output signatures against `micron-parser-js`
 - Benchmarks: `make bench` (native Go + reference JS, NomadNet corpus)
+- Property based test
 
 ## License
 
