@@ -25,6 +25,9 @@ fuzz:
 	go test ./micron -run=^$$ -fuzz=FuzzConvertMicronToHTML -fuzztime=5s
 	go test ./micron -run=^$$ -fuzz=FuzzParseHeaderTags -fuzztime=5s
 
+lint:
+	revive -config revive.toml -formatter friendly ./micron/*
+
 cover:
 	go test -count=1 -coverprofile=coverage.out ./...
 	go tool cover -html=coverage.out -o coverage.html
