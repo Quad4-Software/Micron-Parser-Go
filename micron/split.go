@@ -8,32 +8,45 @@ import (
 	"unicode/utf8"
 )
 
-// splitAfterSpaceSegments
 func splitAfterSpaceSegments(s string) []string {
 	if s == "" {
 		return []string{""}
 	}
-	var parts []string
+	segments := strings.Count(s, " ") + 1
+	out := make([]string, 0, segments)
 	start := 0
 	for start < len(s) {
 		rel := strings.IndexByte(s[start:], ' ')
 		if rel < 0 {
-			parts = append(parts, s[start:])
+			out = append(out, s[start:])
 			break
 		}
-		sp := start + rel
-		parts = append(parts, s[start:sp+1])
-		start = sp + 1
+		end := start + rel + 1
+		out = append(out, s[start:end])
+		start = end
 	}
-	return parts
+	return out
 }
 
 func (p *Parser) splitAtSpaces(line string) string {
 	var b strings.Builder
-	for _, seg := range splitAfterSpaceSegments(line) {
+	if line == "" {
 		b.WriteString(`<span class="Mu-mws">`)
-		b.WriteString(p.forceMonospace(seg))
+		b.WriteString(p.forceMonospace(""))
 		b.WriteString(`</span>`)
+		return b.String()
+	}
+	start := 0
+	for start < len(line) {
+		rel := strings.IndexByte(line[start:], ' ')
+		end := len(line)
+		if rel >= 0 {
+			end = start + rel + 1
+		}
+		b.WriteString(`<span class="Mu-mws">`)
+		b.WriteString(p.forceMonospace(line[start:end]))
+		b.WriteString(`</span>`)
+		start = end
 	}
 	return b.String()
 }
@@ -47,7 +60,20 @@ func (p *Parser) forceMonospace(line string) string {
 		r, sz := utf8.DecodeRuneInString(line)
 		line = line[sz:]
 		b.WriteString(`<span class="Mu-mnt">`)
-		b.WriteString(htmlText(string(r)))
+		switch r {
+		case '&':
+			b.WriteString("&amp;")
+		case '<':
+			b.WriteString("&lt;")
+		case '>':
+			b.WriteString("&gt;")
+		case '"':
+			b.WriteString("&#34;")
+		case '\'':
+			b.WriteString("&#39;")
+		default:
+			b.WriteRune(r)
+		}
 		b.WriteString(`</span>`)
 	}
 	return b.String()
