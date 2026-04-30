@@ -29,7 +29,17 @@ func (p *Parser) ConvertMicronToHTML(markup string) string {
 		DefaultBG:    defaultBGVal,
 	}
 	var b strings.Builder
-	for _, line := range strings.Split(markup, "\n") {
+	for start := 0; start <= len(markup); {
+		nextRel := strings.IndexByte(markup[start:], '\n')
+		line := ""
+		if nextRel < 0 {
+			line = markup[start:]
+			start = len(markup) + 1
+		} else {
+			next := start + nextRel
+			line = markup[start:next]
+			start = next + 1
+		}
 		r := p.parseLine(line, &s)
 		switch r.Kind {
 		case lineOmit:
