@@ -7,6 +7,9 @@ import "strings"
 
 // ConvertMicronToHTML renders Micron markup to a self-contained HTML fragment.
 // Text is escaped; only parser-emitted tags and attributes appear in the output.
+// The caller supplies the full document; optional leading #!fg= / #!bg= lines
+// affect default colors. The returned string is safe to treat as an HTML
+// fragment only together with a sensible host CSP and link handling policy.
 func (p *Parser) ConvertMicronToHTML(markup string) string {
 	pc := ParseHeaderTags(markup)
 	plain := plainStyle(p)

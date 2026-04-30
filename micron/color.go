@@ -15,7 +15,9 @@ const (
 	defaultFGLight = "222"
 )
 
-// ColorToCSS maps Micron color tokens to CSS color strings.
+// ColorToCSS maps Micron color tokens (hex, grayscale gNN, defaults) to CSS
+// color strings, or returns an empty string when c is empty, "default", or not
+// recognized.
 func ColorToCSS(c string) string {
 	if c == "" || c == defaultBG {
 		return ""

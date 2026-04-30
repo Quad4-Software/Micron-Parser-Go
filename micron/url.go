@@ -10,7 +10,9 @@ import (
 
 var schemePrefix = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9+.-]*://`)
 
-// FormatNomadnetworkURL ensures URLs have a scheme, matching micron-parser-js.
+// FormatNomadnetworkURL ensures URLs have a scheme recognized by Micron /
+// NomadNet tooling. If url already begins with a letter scheme and "://", it
+// is returned unchanged; otherwise "nomadnetwork://" is prepended.
 func FormatNomadnetworkURL(url string) string {
 	if url == "" {
 		return url

@@ -3,11 +3,13 @@
 
 package micron
 
-import "maps"
+import (
+	"maps"
+	"strings"
+)
 
-import "strings"
-
-// FieldInput is a normalized HTML input element snapshot.
+// FieldInput is a normalized HTML control snapshot (type, name, value, checked).
+// Type is matched case-insensitively; "checkbox" and "radio" use Checked.
 type FieldInput struct {
 	Type    string
 	Name    string
@@ -15,14 +17,17 @@ type FieldInput struct {
 	Checked bool
 }
 
-// RequestPayload is a resolved link/request execution payload.
+// RequestPayload is the resolved destination, submitted fields, and backtick
+// request variables from a Micron-style link destination string.
 type RequestPayload struct {
 	Destination string            `json:"destination"`
 	Fields      map[string]string `json:"fields"`
 	RequestVars map[string]string `json:"request_vars"`
 }
 
-// CollectFormFields converts HTML input snapshots into Micron field semantics.
+// CollectFormFields converts HTML input snapshots into a name to value map.
+// Checkboxes with the same name and multiple checked values are joined with
+// commas; the last checked radio wins for a given name.
 func CollectFormFields(inputs []FieldInput) map[string]string {
 	out := map[string]string{}
 	for _, in := range inputs {
@@ -51,7 +56,9 @@ func CollectFormFields(inputs []FieldInput) map[string]string {
 	return out
 }
 
-// BuildRequestPayload resolves fields and request vars from link metadata.
+// BuildRequestPayload splits destination on "`" into a base path and optional
+// k=v|… request variables, then selects fields from allFields using fieldsSpec.
+// Use "*" to copy all of allFields into the payload. allFields is not modified.
 func BuildRequestPayload(allFields map[string]string, destination, fieldsSpec string) RequestPayload {
 	dest, reqVars := splitDestinationVars(destination)
 	selected := map[string]string{}

@@ -3,9 +3,14 @@
 
 package micron
 
-// Parser converts Micron markup to HTML.
+// Parser configures Micron-to-HTML conversion. A zero Parser is usable;
+// set DarkTheme and ForceMonospace for light/dark defaults and monospace layout.
+// Parser values are safe for concurrent use by multiple goroutines.
 type Parser struct {
-	DarkTheme      bool
+	// DarkTheme selects default palette when the document does not set #!fg / #!bg.
+	DarkTheme bool
+	// ForceMonospace wraps segments in monospace span markup and affects how
+	// link labels are escaped.
 	ForceMonospace bool
 }
 
