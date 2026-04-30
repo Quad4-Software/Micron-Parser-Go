@@ -4,6 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Micron-Parser-Go</title>
+<meta name="description" content="Micron-Parser-Go web demo: edit Micron markup and render HTML via Go WebAssembly in real time.">
+<meta name="robots" content="index,follow">
+<meta property="og:title" content="Micron-Parser-Go">
+<meta property="og:description" content="Go + WebAssembly Micron parser demo with live source and preview panes.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="/">
 <style>
   :root {
     --bg: #0f1419;
@@ -15,6 +21,28 @@
     --mono: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas, monospace;
   }
   * { box-sizing: border-box; }
+  html, body, #input, #preview-wrap, .tab-list {
+    scrollbar-width: thin;
+    scrollbar-color: #3a465b #0b0f14;
+  }
+  *::-webkit-scrollbar {
+    width: 11px;
+    height: 11px;
+  }
+  *::-webkit-scrollbar-track {
+    background: #0b0f14;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: #3a465b;
+    border-radius: 10px;
+    border: 2px solid #0b0f14;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: #4a5c77;
+  }
+  *::-webkit-scrollbar-corner {
+    background: #0b0f14;
+  }
   body {
     margin: 0;
     min-height: 100vh;
@@ -235,6 +263,16 @@
     text-decoration: inherit;
     display: inline-block;
   }
+  .Mu-partial {
+    display: block;
+    min-height: 1.2em;
+  }
+  .Mu-partial.pending {
+    opacity: 0.85;
+  }
+  .Mu-partial.error {
+    color: #f85149;
+  }
   #context-menu {
     position: fixed;
     z-index: 1000;
@@ -274,6 +312,7 @@
   <h1>Micron-Parser-Go</h1>
   <div class="header-links">
     <a id="repo-source-link" href="https://git.quad4.io/Go-Libs/micron-parser-go" target="_blank" rel="noopener noreferrer">Source</a>
+    <a href="bench.html">Bench</a>
     <button type="button" class="header-action" id="header-download" title="Save current tab as .mu">Download</button>
     <span id="status" class="status">Loading WASM</span>
   </div>
@@ -712,6 +751,8 @@ To display literal content, for example source-code, or blocks of text that shou
   let convert = null;
   let rafId = 0;
   let state = loadState();
+  let partialRunID = 0;
+  const partialIntervals = new Map();
 
   function setStatus(msg, err) {
     statusEl.textContent = msg;
@@ -903,10 +944,71 @@ To display literal content, for example source-code, or blocks of text that shou
       return;
     }
     try {
+      clearPartialIntervals();
+      partialRunID += 1;
       preview.innerHTML = convert(input.value, true, true);
+      hydratePartials(partialRunID);
       setStatus("WASM loaded");
     } catch (_) {
       setStatus("WASM failed", true);
+    }
+  }
+
+  function clearPartialIntervals() {
+    for (const id of partialIntervals.values()) {
+      clearInterval(id);
+    }
+    partialIntervals.clear();
+  }
+
+  function isFetchableURL(url) {
+    const u = String(url || "").trim();
+    return u.startsWith("/") || u.startsWith("./") || u.startsWith("../") || u.startsWith("http://") || u.startsWith("https://");
+  }
+
+  async function renderPartialNode(node, runID) {
+    const raw = String(node.getAttribute("data-partial-url") || "").trim();
+    node.classList.add("pending");
+    if (!isFetchableURL(raw)) {
+      node.textContent = "[partial unsupported URL: " + raw + "]";
+      node.classList.remove("pending");
+      node.classList.add("error");
+      return;
+    }
+    try {
+      const res = await fetch(raw, { cache: "no-store" });
+      if (!res.ok) {
+        throw new Error("HTTP " + res.status);
+      }
+      const markup = await res.text();
+      if (runID !== partialRunID) {
+        return;
+      }
+      node.innerHTML = convert(markup, true, true);
+      node.classList.remove("error");
+    } catch (_) {
+      node.textContent = "[partial load failed: " + raw + "]";
+      node.classList.add("error");
+    } finally {
+      node.classList.remove("pending");
+    }
+  }
+
+  function hydratePartials(runID) {
+    const nodes = preview.querySelectorAll(".Mu-partial[data-partial-url]");
+    for (const node of nodes) {
+      renderPartialNode(node, runID);
+      const refreshRaw = String(node.getAttribute("data-partial-refresh") || "");
+      const refresh = parseInt(refreshRaw, 10);
+      if (Number.isFinite(refresh) && refresh > 0) {
+        const intervalID = setInterval(() => {
+          if (runID !== partialRunID) {
+            return;
+          }
+          renderPartialNode(node, runID);
+        }, refresh * 1000);
+        partialIntervals.set(node, intervalID);
+      }
     }
   }
 

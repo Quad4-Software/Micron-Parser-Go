@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Micron WASM vs JS Benchmark</title>
+  <meta name="description" content="Benchmark Micron parser performance in-browser: Go WASM renderer versus micron-parser-js on the same corpus.">
+  <meta name="robots" content="index,follow">
+  <meta property="og:title" content="Micron WASM vs JS Benchmark">
+  <meta property="og:description" content="Compare Go WASM and micron-parser-js rendering speed in the browser.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="/bench.html">
+  <style>
+    body {
+      margin: 0;
+      padding: 1rem;
+      background: #0f1419;
+      color: #e6edf3;
+      font-family: system-ui, sans-serif;
+    }
+    h1 {
+      margin-top: 0;
+      font-size: 1.2rem;
+    }
+    button {
+      border: 1px solid #263041;
+      background: #10161f;
+      color: #e6edf3;
+      border-radius: 0.35rem;
+      padding: 0.45rem 0.8rem;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .bench-status {
+      display: inline-block;
+      margin-left: 0.65rem;
+      font-size: 0.86rem;
+      color: #8b9cb3;
+      vertical-align: middle;
+    }
+    .bench-status.running {
+      color: #3d8bfd;
+    }
+    .bench-status.ok {
+      color: #2ea043;
+    }
+    .bench-status.err {
+      color: #f85149;
+    }
+    pre {
+      margin-top: 1rem;
+      padding: 0.8rem;
+      border: 1px solid #263041;
+      border-radius: 0.35rem;
+      background: #000;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      font-size: 0.82rem;
+      line-height: 1.45;
+    }
+  </style>
+</head>
+<body>
+  <h1>Micron Benchmark (WASM vs micron-parser-js)</h1>
+  <p>Runs 10 timed measurements per engine on <code>nomadnet_guide.mu</code>.</p>
+  <button id="run-bench" type="button">Run benchmark</button>
+  <span id="bench-status" class="bench-status">Idle</span>
+  <pre id="output">Ready.</pre>
+
+  <script src="wasm_exec.js"></script>
+  <script>
+  (function () {
+    const out = document.getElementById("output");
+    const runBtn = document.getElementById("run-bench");
+    const statusEl = document.getElementById("bench-status");
+
+    function setStatus(label, mode) {
+      statusEl.textContent = label;
+      statusEl.className = "bench-status" + (mode ? " " + mode : "");
+    }
+
+    function log(msg) {
+      out.textContent += (out.textContent === "Ready." ? "" : "\n") + msg;
+    }
+
+    function mean(values) {
+      let s = 0;
+      for (const v of values) s += v;
+      return s / values.length;
+    }
+
+    function stdev(values, m) {
+      if (values.length < 2) return 0;
+      let v = 0;
+      for (const x of values) v += (x - m) * (x - m);
+      return Math.sqrt(v / (values.length - 1));
+    }
+
+    async function initWasm() {
+      if (typeof Go === "undefined") {
+        throw new Error("Go runtime (wasm_exec.js) not loaded");
+      }
+      const go = new Go();
+      const res = await WebAssembly.instantiateStreaming(fetch("micron.wasm"), go.importObject);
+      go.run(res.instance);
+      if (typeof globalThis.micronConvert !== "function") {
+        throw new Error("micronConvert not available from WASM");
+      }
+    }
+
+    async function initReferenceJS() {
+      const parserCandidates = ["./static/vendor/micron-parser.js", "./vendor/micron-parser.js", "../micron/testdata/micron-parser.js"];
+      let lastError = "";
+      for (const path of parserCandidates) {
+        try {
+          const mod = await import(path);
+          const ParserCtor = mod && (mod.default || mod.MicronParser);
+          if (typeof ParserCtor === "function") {
+            globalThis.MicronParser = ParserCtor;
+            return;
+          }
+          lastError = "module loaded but parser export missing at " + path;
+        } catch (err) {
+          lastError = err && err.message ? err.message : String(err);
+        }
+      }
+      throw new Error("failed to load reference parser module (tried: " + parserCandidates.join(", ") + "; last error: " + lastError + ")");
+    }
+
+    function runBatch(fn, input, iterations) {
+      const t0 = performance.now();
+      for (let i = 0; i < iterations; i++) fn(input);
+      const t1 = performance.now();
+      return ((t1 - t0) * 1e6) / iterations;
+    }
+
+    function calibrate(fn, input) {
+      let iters = 8;
+      const targetNs = 150e6;
+      for (let i = 0; i < 12; i++) {
+        const ns = runBatch(fn, input, iters) * iters;
+        if (ns >= targetNs) break;
+        iters = Math.min(iters * 2, 8192);
+      }
+      return iters;
+    }
+
+    async function run() {
+      runBtn.disabled = true;
+      runBtn.textContent = "Benchmarking...";
+      setStatus("Loading benchmark corpus...", "running");
+      out.textContent = "";
+      try {
+        log("Loading benchmark corpus and engines...");
+        let markup = "";
+        const corpusCandidates = ["static/data/nomadnet_guide.mu", "nomadnet_guide.mu", "../micron/testdata/nomadnet_guide.mu"];
+        let lastStatus = "unknown";
+        for (const path of corpusCandidates) {
+          const res = await fetch(path);
+          lastStatus = String(res.status);
+          if (!res.ok) continue;
+          markup = await res.text();
+          if (markup) break;
+        }
+        if (!markup) {
+          throw new Error("failed to load benchmark corpus (tried: " + corpusCandidates.join(", ") + "; last status: " + lastStatus + ")");
+        }
+        const inputBytes = new TextEncoder().encode(markup).length;
+
+        setStatus("Initializing WASM runtime...", "running");
+        await initWasm();
+        setStatus("Loading reference JS parser...", "running");
+        await initReferenceJS();
+        if (typeof globalThis.MicronParser !== "function") {
+          throw new Error("MicronParser class not loaded");
+        }
+
+        const wasmFn = (src) => globalThis.micronConvert(src, true, true);
+        const jsParser = new globalThis.MicronParser(true, true);
+        const jsFn = (src) => jsParser.convertMicronToHtml(src);
+
+        setStatus("Warming up both engines...", "running");
+        wasmFn(markup);
+        jsFn(markup);
+
+        const runs = 10;
+        setStatus("Calibrating WASM iterations...", "running");
+        const wasmIters = calibrate(wasmFn, markup);
+        setStatus("Calibrating JS iterations...", "running");
+        const jsIters = calibrate(jsFn, markup);
+
+        const wasmTimes = [];
+        const jsTimes = [];
+        setStatus("Running timed WASM samples (" + runs + ")...", "running");
+        for (let i = 0; i < runs; i++) wasmTimes.push(runBatch(wasmFn, markup, wasmIters));
+        setStatus("Running timed JS samples (" + runs + ")...", "running");
+        for (let i = 0; i < runs; i++) jsTimes.push(runBatch(jsFn, markup, jsIters));
+
+        const wasmMean = mean(wasmTimes);
+        const jsMean = mean(jsTimes);
+        const wasmStd = stdev(wasmTimes, wasmMean);
+        const jsStd = stdev(jsTimes, jsMean);
+        const wasmMiB = inputBytes / (wasmMean / 1e9) / (1024 * 1024);
+        const jsMiB = inputBytes / (jsMean / 1e9) / (1024 * 1024);
+
+        log("Input bytes: " + inputBytes);
+        log("");
+        log("WASM (micronConvert)");
+        log("  runs: " + runs + ", inner iterations: " + wasmIters);
+        log("  mean ns/op: " + wasmMean.toFixed(0));
+        log("  stdev ns/op: " + wasmStd.toFixed(0));
+        log("  min/max ns/op: " + Math.min(...wasmTimes).toFixed(0) + " / " + Math.max(...wasmTimes).toFixed(0));
+        log("  throughput: " + wasmMiB.toFixed(2) + " MiB/s");
+        log("");
+        log("reference JS (micron-parser-js)");
+        log("  runs: " + runs + ", inner iterations: " + jsIters);
+        log("  mean ns/op: " + jsMean.toFixed(0));
+        log("  stdev ns/op: " + jsStd.toFixed(0));
+        log("  min/max ns/op: " + Math.min(...jsTimes).toFixed(0) + " / " + Math.max(...jsTimes).toFixed(0));
+        log("  throughput: " + jsMiB.toFixed(2) + " MiB/s");
+        log("");
+        log("speedup (JS mean / WASM mean): " + (jsMean / wasmMean).toFixed(2) + "x");
+        setStatus("Benchmark completed", "ok");
+      } catch (err) {
+        log("Benchmark failed: " + (err && err.message ? err.message : String(err)));
+        setStatus("Benchmark failed", "err");
+      } finally {
+        runBtn.disabled = false;
+        runBtn.textContent = "Run benchmark";
+      }
+    }
+
+    runBtn.addEventListener("click", run);
+  })();
+  </script>
+</body>
+</html>
