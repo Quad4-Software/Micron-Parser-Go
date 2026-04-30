@@ -21,9 +21,18 @@ test-smoke:
 test-interop:
 	go test -count=1 ./micron -run TestInteropWithReferenceJS
 
+FUZZTIME ?= 3s
+
 fuzz:
-	go test ./micron -run=^$$ -fuzz=FuzzConvertMicronToHTML -fuzztime=5s
-	go test ./micron -run=^$$ -fuzz=FuzzParseHeaderTags -fuzztime=5s
+	set -e; for fuzz in \
+		FuzzConvertMicronToHTML \
+		FuzzLightThemeConvertMicronToHTML \
+		FuzzFormatNomadnetworkURL \
+		FuzzBuildRequestPayload \
+		FuzzCollectFormFields \
+		FuzzParseHeaderTags; do \
+		go test ./micron -run=^$$ -fuzz=$$fuzz -fuzztime=$(FUZZTIME); \
+	done
 
 lint:
 	revive -config revive.toml -formatter friendly ./micron/*
