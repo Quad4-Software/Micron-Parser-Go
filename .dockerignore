@@ -1,0 +1,12 @@
+.git
+.gitignore
+agent-transcripts
+terminals
+mcps
+node_modules
+coverage.out
+coverage.html
+*.test
+*.out
+web/micron.wasm
+web/wasm_exec.js
