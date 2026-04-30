@@ -1,0 +1,7 @@
+/web/wasm_exec.js
+/web/micron.wasm
+*.test
+*.out
+coverage.out
+coverage.html
+.DS_Store
