@@ -57,6 +57,8 @@ func (p *Parser) appendOutput(b *strings.Builder, parts []linePart, s *State) {
 		}
 		if pr.html != "" {
 			span.WriteString(pr.html)
+		} else if p.ForceMonospace {
+			p.appendSplitAtSpaces(&span, pr.text)
 		} else {
 			span.WriteString(htmlText(pr.text))
 		}
