@@ -67,11 +67,19 @@ type Link struct {
 	Style  Style
 }
 
+// Partial is an asynchronously loaded micron block with optional refresh interval.
+type Partial struct {
+	URL            string
+	RefreshSeconds int
+	Style          Style
+}
+
 // linePart is one segment on a line after makeOutput.
 type linePart struct {
-	style Style
-	text  string
-	html  string
-	field *Field
-	link  *Link
+	style   Style
+	text    string
+	html    string
+	field   *Field
+	link    *Link
+	partial *Partial
 }

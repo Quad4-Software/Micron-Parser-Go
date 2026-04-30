@@ -165,10 +165,7 @@ func (p *Parser) parseLine(line string, s *State) lineResult {
 }
 
 func sectionIndentStyle(s *State) string {
-	ind := (s.Depth - 1) * 2
-	if ind < 0 {
-		ind = 0
-	}
+	ind := max((s.Depth-1)*2, 0)
 	if ind <= 0 {
 		return ""
 	}

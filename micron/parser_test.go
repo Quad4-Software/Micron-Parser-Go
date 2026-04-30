@@ -109,3 +109,19 @@ func TestCheckboxRadio(t *testing.T) {
 		t.Fatal(out)
 	}
 }
+
+func TestPartialTag(t *testing.T) {
+	p := Parser{DarkTheme: true, ForceMonospace: false}
+	out := p.ConvertMicronToHTML("`{f64a:/page/partial_1.mu}")
+	if !strings.Contains(out, `class="Mu-partial"`) || !strings.Contains(out, `data-partial-url="nomadnetwork://f64a:/page/partial_1.mu"`) {
+		t.Fatal(out)
+	}
+}
+
+func TestPartialTagWithRefresh(t *testing.T) {
+	p := Parser{DarkTheme: true, ForceMonospace: false}
+	out := p.ConvertMicronToHTML("`{f64a:/page/refreshing_partial.mu`10}")
+	if !strings.Contains(out, `class="Mu-partial"`) || !strings.Contains(out, `data-partial-refresh="10"`) {
+		t.Fatal(out)
+	}
+}

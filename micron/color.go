@@ -41,7 +41,7 @@ func ColorToCSS(c string) string {
 }
 
 func isHex3(s string) bool {
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		if !isHexByte(s[i]) {
 			return false
 		}
@@ -50,7 +50,7 @@ func isHex3(s string) bool {
 }
 
 func isHex6(s string) bool {
-	for i := 0; i < 6; i++ {
+	for i := range 6 {
 		if !isHexByte(s[i]) {
 			return false
 		}

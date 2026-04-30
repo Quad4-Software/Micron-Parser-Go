@@ -18,7 +18,7 @@ func TestConcurrentConvertMicronToHTML(t *testing.T) {
 		"`<24|name`v>",
 	}
 	var wg sync.WaitGroup
-	for n := 0; n < 128; n++ {
+	for n := range 128 {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()

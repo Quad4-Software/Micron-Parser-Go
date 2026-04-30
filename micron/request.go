@@ -3,6 +3,8 @@
 
 package micron
 
+import "maps"
+
 import "strings"
 
 // FieldInput is a normalized HTML input element snapshot.
@@ -54,9 +56,7 @@ func BuildRequestPayload(allFields map[string]string, destination, fieldsSpec st
 	dest, reqVars := splitDestinationVars(destination)
 	selected := map[string]string{}
 	if fieldsSpec == "*" {
-		for k, v := range allFields {
-			selected[k] = v
-		}
+		maps.Copy(selected, allFields)
 	} else {
 		for _, name := range splitFieldList(fieldsSpec) {
 			if v, ok := allFields[name]; ok {
@@ -93,16 +93,16 @@ func splitDestinationVars(destination string) (string, map[string]string) {
 	if destination == "" {
 		return "", vars
 	}
-	bt := strings.IndexByte(destination, '`')
-	if bt < 0 {
+	before, after, ok := strings.Cut(destination, "`")
+	if !ok {
 		return destination, vars
 	}
-	base := destination[:bt]
-	raw := destination[bt+1:]
+	base := before
+	raw := after
 	if raw == "" {
 		return base, vars
 	}
-	for _, pair := range strings.Split(raw, "|") {
+	for pair := range strings.SplitSeq(raw, "|") {
 		if pair == "" {
 			continue
 		}

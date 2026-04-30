@@ -66,7 +66,7 @@ func TestInteropRandomizedDeterministic(t *testing.T) {
 	}
 	rng := rand.New(rand.NewSource(1337))
 	cases := make([]interopCase, 0, 120)
-	for i := 0; i < 120; i++ {
+	for i := range 120 {
 		cases = append(cases, interopCase{
 			Name:   "rnd-" + boolName(i%2 == 0, "a", "b") + "-" + boolName(i%3 == 0, "x", "y"),
 			Markup: randomMarkup(rng),
@@ -221,10 +221,10 @@ func randomMarkup(r *rand.Rand) string {
 	}
 	lineCount := 1 + r.Intn(12)
 	lines := make([]string, 0, lineCount)
-	for i := 0; i < lineCount; i++ {
+	for range lineCount {
 		parts := 1 + r.Intn(3)
 		chunks := make([]string, 0, parts)
-		for j := 0; j < parts; j++ {
+		for range parts {
 			chunks = append(chunks, tokens[r.Intn(len(tokens))])
 		}
 		lines = append(lines, strings.Join(chunks, " "))

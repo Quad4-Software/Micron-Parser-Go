@@ -101,6 +101,14 @@ func (p *Parser) makeOutput(s *State, line string) []linePart {
 					modeText = true
 					continue
 				}
+			case '{':
+				flushPart()
+				if sk, pt := p.parsePartial(line, i, s); pt != nil {
+					out = append(out, linePart{partial: pt})
+					i += sk
+					modeText = true
+					continue
+				}
 			}
 			modeText = true
 			i++

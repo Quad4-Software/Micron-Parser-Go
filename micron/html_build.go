@@ -38,7 +38,7 @@ func (p *Parser) appendOutput(b *strings.Builder, parts []linePart, s *State) {
 	}
 
 	for _, pr := range parts {
-		if pr.field != nil || pr.link != nil {
+		if pr.field != nil || pr.link != nil || pr.partial != nil {
 			flush()
 		}
 		if pr.field != nil {
@@ -47,6 +47,10 @@ func (p *Parser) appendOutput(b *strings.Builder, parts []linePart, s *State) {
 		}
 		if pr.link != nil {
 			p.writeLink(b, pr.link, s)
+			continue
+		}
+		if pr.partial != nil {
+			p.writePartial(b, pr.partial, s)
 			continue
 		}
 		st := pr.style
@@ -161,6 +165,24 @@ func (p *Parser) writeLink(b *strings.Builder, lk *Link, s *State) {
 	b.WriteString(`>`)
 	b.WriteString(lk.Label)
 	b.WriteString(`</a>`)
+}
+
+func (p *Parser) writePartial(b *strings.Builder, pt *Partial, s *State) {
+	sa := styleAttr(pt.Style, s.DefaultBG)
+	b.WriteString(`<div class="Mu-partial" data-partial-url="`)
+	b.WriteString(htmlAttr(pt.URL))
+	b.WriteString(`"`)
+	if pt.RefreshSeconds > 0 {
+		b.WriteString(` data-partial-refresh="`)
+		b.WriteString(fmt.Sprintf("%d", pt.RefreshSeconds))
+		b.WriteString(`"`)
+	}
+	if sa != "" {
+		b.WriteString(` style="`)
+		b.WriteString(sa)
+		b.WriteString(`"`)
+	}
+	b.WriteString(`></div>`)
 }
 
 func htmlAttr(s string) string {

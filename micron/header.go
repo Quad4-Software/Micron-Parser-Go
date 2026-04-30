@@ -14,8 +14,8 @@ type PageColors struct {
 // ParseHeaderTags reads leading #!fg= / #!bg= lines.
 func ParseHeaderTags(markup string) PageColors {
 	var out PageColors
-	lines := strings.Split(markup, "\n")
-	for _, line := range lines {
+	lines := strings.SplitSeq(markup, "\n")
+	for line := range lines {
 		t := strings.TrimSpace(line)
 		if t == "" {
 			continue

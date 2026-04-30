@@ -35,6 +35,17 @@ func BenchmarkConvertNomadNetGuide(b *testing.B) {
 	}
 }
 
+func BenchmarkConvertMassiveSynthetic(b *testing.B) {
+	markup := buildMassiveSyntheticMarkup(2200)
+	p := Parser{DarkTheme: true, ForceMonospace: true}
+	b.SetBytes(int64(len(markup)))
+	b.ReportMetric(float64(len(markup)), "B/input")
+	b.ResetTimer()
+	for b.Loop() {
+		_ = p.ConvertMicronToHTML(markup)
+	}
+}
+
 func TestNomadNetGuideCorpus(t *testing.T) {
 	data, err := os.ReadFile(filepath.Join("testdata", "nomadnet_guide.mu"))
 	if err != nil {

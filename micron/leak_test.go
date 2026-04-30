@@ -12,7 +12,7 @@ import (
 func TestNoGoroutineLeakAcrossRepeatedConversions(t *testing.T) {
 	p := Parser{DarkTheme: true, ForceMonospace: false}
 	base := runtime.NumGoroutine()
-	for i := 0; i < 2000; i++ {
+	for range 2000 {
 		_ = p.ConvertMicronToHTML("`!hello\n`B123world\n`b")
 	}
 	runtime.GC()
