@@ -17,24 +17,25 @@ func (p *Parser) makeOutput(s *State, line string) []linePart {
 		return []linePart{{style: st, text: line}}
 	}
 
-	var out []linePart
-	part := ""
+	out := make([]linePart, 0, 8)
+	var part strings.Builder
 	modeText := true
 	escape := false
 	skip := 0
 	i := 0
 
 	flushPart := func() {
-		if part == "" {
+		if part.Len() == 0 {
 			return
 		}
+		partStr := part.String()
+		part.Reset()
 		st := p.stateToStyle(s)
 		if p.ForceMonospace {
-			out = append(out, linePart{style: st, html: p.splitAtSpaces(part)})
+			out = append(out, linePart{style: st, html: p.splitAtSpaces(partStr)})
 		} else {
-			out = append(out, linePart{style: st, text: part})
+			out = append(out, linePart{style: st, text: partStr})
 		}
-		part = ""
 	}
 
 	for i < len(line) {
@@ -115,7 +116,7 @@ func (p *Parser) makeOutput(s *State, line string) []linePart {
 
 		c := line[i]
 		if escape {
-			part += string(c)
+			part.WriteByte(c)
 			escape = false
 			i++
 			continue
@@ -142,7 +143,7 @@ func (p *Parser) makeOutput(s *State, line string) []linePart {
 			i++
 			continue
 		}
-		part += string(c)
+		part.WriteByte(c)
 		i++
 	}
 	flushPart()
