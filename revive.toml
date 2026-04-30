@@ -1,0 +1,50 @@
+ignoreGeneratedHeader = false
+severity = "warning"
+confidence = 0.8
+errorCode = 1
+warningCode = 0
+
+[rule.add-constant]
+  arguments = [
+    { maxLitCount = "5", allowStrs = "\"\",\"%v\",\"%s\",\"%d\",\"%x\",\"%w\"", allowInts = "0,1,2,3,4,5,6,7,8,10,16,24,32,64,100,128,255,256,512,1000,1024,2048,4096,8192,65535", allowFloats = "0.0,1.0,0.5", ignoreFuncs = "^(fmt|log|debug|slog)\\." }
+  ]
+
+[rule.exported]
+  arguments = ["checkPrivateReceivers", "disableStutteringCheck", "disableChecksOnConstants", "disableChecksOnFunctions", "disableChecksOnMethods", "disableChecksOnTypes", "disableChecksOnVariables"]
+
+[rule.argument-limit]
+  arguments = [12]
+
+[rule.atomic]
+[rule.bare-return]
+[rule.blank-imports]
+[rule.bool-literal-in-expr]
+[rule.confusing-naming]
+[rule.confusing-results]
+[rule.constant-logical-expr]
+[rule.context-as-argument]
+[rule.context-keys-type]
+[rule.deep-exit]
+[rule.duplicated-imports]
+[rule.early-return]
+[rule.empty-block]
+[rule.error-naming]
+[rule.error-return]
+[rule.error-strings]
+[rule.errorf]
+[rule.if-return]
+[rule.increment-decrement]
+[rule.indent-error-flow]
+[rule.modifies-parameter]
+[rule.modifies-value-receiver]
+[rule.range]
+[rule.receiver-naming]
+[rule.redefines-builtin-id]
+[rule.string-format]
+[rule.struct-tag]
+[rule.superfluous-else]
+[rule.time-naming]
+[rule.unexported-return]
+[rule.unnecessary-stmt]
+[rule.unreachable-code]
+[rule.var-declaration]
