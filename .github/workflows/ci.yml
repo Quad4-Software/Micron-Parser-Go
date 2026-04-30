@@ -1,0 +1,123 @@
+# Linux CI: vet, revive, gosec, tests (race + JS interop), fuzz, govulncheck, Go benchmarks.
+#
+# Bump action versions by changing the tag in `uses:` and the SHA in the comment
+# block below (verify with):
+#   curl -sL https://api.github.com/repos/<org>/<repo>/git/refs/tags/<tag> | jq -r '.object.sha'
+# For annotated third-party tags, resolve the commit:
+#   curl -sL https://api.github.com/repos/<org>/<repo>/git/tags/<tag_sha> | jq -r '.object.sha'
+#
+# Pinned first-party actions (bump tag and SHA together when upgrading):
+#   actions/checkout@v6.0.1            8e8c483db84b4bee98b60c0593521ed34d9990e8
+#   actions/setup-go@v6.1.0            4dc6199c7b1a012772edbd06daecab0f50c9053c
+#   actions/setup-node@v6.1.0        395ad3262231945c25e8478fd5baf05154b1d79f
+# Third-party:
+#   securego/gosec@v2.22.10          6be2b51fd78feca86af91f5186b7964d76cb1256  (tag bfec35a3 -> object commit)
+
+name: CI
+
+on:
+    push:
+        branches:
+            - "**"
+    pull_request:
+        branches:
+            - master
+            - main
+            - dev
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
+
+env:
+    GO_VERSION: "1.26.2"
+    NODE_VERSION: "22"
+    FUZZTIME: "15s"
+    GOVULN_VERSION: "v1.3.0"
+    REVIVE_VERSION: "v1.11.0"
+
+jobs:
+    verify:
+        name: ${{ matrix.task.name }}
+        runs-on: ubuntu-latest
+        timeout-minutes: ${{ matrix.task.timeout }}
+        permissions:
+            contents: read
+        strategy:
+            fail-fast: false
+            matrix:
+                task:
+                    - name: Lint and vet
+                      id: lint
+                      timeout: 15
+                    - name: Gosec
+                      id: gosec
+                      timeout: 15
+                    - name: Tests (race + interop)
+                      id: test
+                      timeout: 20
+                    - name: Fuzz
+                      id: fuzz
+                      timeout: 25
+                    - name: govulncheck
+                      id: vuln
+                      timeout: 15
+                    - name: Benchmarks (Go)
+                      id: bench
+                      timeout: 20
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+
+            - name: Set up Go
+              uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c
+              with:
+                  go-version: ${{ env.GO_VERSION }}
+                  cache: true
+
+            - name: Set up Node (interop tests)
+              if: matrix.task.id == 'test'
+              uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f
+              with:
+                  node-version: ${{ env.NODE_VERSION }}
+
+            - name: Run Gosec
+              if: matrix.task.id == 'gosec'
+              uses: securego/gosec@6be2b51fd78feca86af91f5186b7964d76cb1256
+              with:
+                  args: '-exclude-dir=examples ./...'
+
+            - name: Run matrix task
+              if: matrix.task.id != 'gosec'
+              run: |
+                  set -euo pipefail
+                  case "${{ matrix.task.id }}" in
+                    lint)
+                      go vet ./...
+                      go install github.com/mgechev/revive@${{ env.REVIVE_VERSION }}
+                      "$(go env GOPATH)/bin/revive" -config revive.toml -formatter friendly ./micron/*
+                      ;;
+                    test)
+                      go test -count=1 -race ./...
+                      ;;
+                    fuzz)
+                      make FUZZTIME="${{ env.FUZZTIME }}" fuzz
+                      ;;
+                    vuln)
+                      go install golang.org/x/vuln/cmd/govulncheck@${{ env.GOVULN_VERSION }}
+                      "$(go env GOPATH)/bin/govulncheck" ./...
+                      ;;
+                    bench)
+                      go test ./micron -run=^$ -bench='BenchmarkConvertNomadNetGuide|BenchmarkConvertMicronToHTML' \
+                        -benchmem -benchtime=300ms -count=3 -timeout=30m
+                      ;;
+                    *)
+                      echo "Unknown matrix task: ${{ matrix.task.id }}" >&2
+                      exit 1
+                      ;;
+                  esac
