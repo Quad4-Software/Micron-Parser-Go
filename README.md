@@ -90,8 +90,8 @@ Benchmarks use the **NomadNet guide** micron source from Micron-Parser-JS.
 
 | Implementation | Environment | Mean time / conversion | Notes |
 |----------------|---------------|------------------------|--------|
-| This package (Go) | `go test` native amd64 | ~4.08 ms | 10× `BenchmarkConvertNomadNetGuide` runs; ~3.57–5.00 ms/op across those runs |
-| Reference [micron-parser-js](https://github.com/RFnexus/micron-parser-js) | Node + DOM stub | ~21.4 ms | 10 measured runs; ~19.7–26.2 ms; ~0.50 MiB/s mean throughput |
+| This package (Go) | `go test` native amd64 | ~2.36 ms | 10× `BenchmarkConvertNomadNetGuide` runs; ~2.19–2.57 ms/op, ~4.71 MB/op, 5203 allocs/op |
+| Reference [micron-parser-js](https://github.com/RFnexus/micron-parser-js) | Node + DOM stub | ~21.0 ms | 10 measured runs; ~19.7–25.9 ms; ~0.51 MiB/s mean throughput |
 
 **WebAssembly:** The browser build uses the same Go code as the native benchmark, but timing includes JS/WASM call overhead and is strongly browser-dependent. It will not match the `go test` numbers above.
 
