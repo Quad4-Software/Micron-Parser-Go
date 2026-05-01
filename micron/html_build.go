@@ -9,6 +9,32 @@ import (
 	"strings"
 )
 
+func appendQuotedHTMLStyleAttr(b *strings.Builder, st Style, defaultBG string) bool {
+	var tmp strings.Builder
+	tmp.Grow(96)
+	appendStyleAttr(&tmp, st, defaultBG)
+	if tmp.Len() == 0 {
+		return false
+	}
+	b.WriteString(` style="`)
+	b.WriteString(tmp.String())
+	b.WriteByte('"')
+	return true
+}
+
+func appendStyledSpanOpen(b *strings.Builder, st Style, defaultBG string) bool {
+	var tmp strings.Builder
+	tmp.Grow(96)
+	appendStyleAttr(&tmp, st, defaultBG)
+	if tmp.Len() == 0 {
+		return false
+	}
+	b.WriteString(`<span style="`)
+	b.WriteString(tmp.String())
+	b.WriteString(`">`)
+	return true
+}
+
 func (p *Parser) appendOutput(b *strings.Builder, parts []linePart, s *State) {
 	var cur Style
 	var have bool
@@ -25,12 +51,7 @@ func (p *Parser) appendOutput(b *strings.Builder, parts []linePart, s *State) {
 		if body == "" {
 			return
 		}
-		var sa strings.Builder
-		appendStyleAttr(&sa, st, s.DefaultBG)
-		if sa.Len() > 0 {
-			b.WriteString(`<span style="`)
-			b.WriteString(sa.String())
-			b.WriteString(`">`)
+		if appendStyledSpanOpen(b, st, s.DefaultBG) {
 			b.WriteString(body)
 			b.WriteString(`</span>`)
 		} else {
@@ -72,17 +93,10 @@ func (p *Parser) appendOutput(b *strings.Builder, parts []linePart, s *State) {
 }
 
 func (p *Parser) writeField(b *strings.Builder, f *Field, s *State) {
-	var sa strings.Builder
-	appendStyleAttr(&sa, f.Style, s.DefaultBG)
-	hasStyle := sa.Len() > 0
 	switch f.Kind {
 	case FieldCheckbox:
 		b.WriteString(`<label`)
-		if hasStyle {
-			b.WriteString(` style="`)
-			b.WriteString(sa.String())
-			b.WriteString(`"`)
-		}
+		appendQuotedHTMLStyleAttr(b, f.Style, s.DefaultBG)
 		b.WriteString(`><input type="checkbox" name="`)
 		b.WriteString(htmlAttr(f.Name))
 		b.WriteString(`" value="`)
@@ -96,11 +110,7 @@ func (p *Parser) writeField(b *strings.Builder, f *Field, s *State) {
 		b.WriteString(`</label>`)
 	case FieldRadio:
 		b.WriteString(`<label`)
-		if hasStyle {
-			b.WriteString(` style="`)
-			b.WriteString(sa.String())
-			b.WriteString(`"`)
-		}
+		appendQuotedHTMLStyleAttr(b, f.Style, s.DefaultBG)
 		b.WriteString(`><input type="radio" name="`)
 		b.WriteString(htmlAttr(f.Name))
 		b.WriteString(`" value="`)
@@ -118,11 +128,7 @@ func (p *Parser) writeField(b *strings.Builder, f *Field, s *State) {
 			t = "password"
 		}
 		b.WriteString(`<input`)
-		if hasStyle {
-			b.WriteString(` style="`)
-			b.WriteString(sa.String())
-			b.WriteString(`"`)
-		}
+		appendQuotedHTMLStyleAttr(b, f.Style, s.DefaultBG)
 		b.WriteString(` type="`)
 		b.WriteString(t)
 		b.WriteString(`" name="`)
@@ -140,9 +146,6 @@ func (p *Parser) writeField(b *strings.Builder, f *Field, s *State) {
 }
 
 func (p *Parser) writeLink(b *strings.Builder, lk *Link, s *State) {
-	var sa strings.Builder
-	appendStyleAttr(&sa, lk.Style, s.DefaultBG)
-	hasStyle := sa.Len() > 0
 	direct := linkDirectURL(lk.URL)
 	if len(lk.Fields) == 0 {
 		b.WriteString(`<a class="Mu-nl" href="`)
@@ -152,11 +155,7 @@ func (p *Parser) writeLink(b *strings.Builder, lk *Link, s *State) {
 		b.WriteString(`" data-action="openNode" data-destination="`)
 		b.WriteString(htmlAttr(direct))
 		b.WriteString(`"`)
-		if hasStyle {
-			b.WriteString(` style="`)
-			b.WriteString(sa.String())
-			b.WriteString(`"`)
-		}
+		appendQuotedHTMLStyleAttr(b, lk.Style, s.DefaultBG)
 		b.WriteString(`>`)
 		b.WriteString(lk.Label)
 		b.WriteString(`</a>`)
@@ -203,19 +202,13 @@ func (p *Parser) writeLink(b *strings.Builder, lk *Link, s *State) {
 	b.WriteString(`" data-fields="`)
 	b.WriteString(htmlAttr(fieldStr.String()))
 	b.WriteString(`"`)
-	if hasStyle {
-		b.WriteString(` style="`)
-		b.WriteString(sa.String())
-		b.WriteString(`"`)
-	}
+	appendQuotedHTMLStyleAttr(b, lk.Style, s.DefaultBG)
 	b.WriteString(`>`)
 	b.WriteString(lk.Label)
 	b.WriteString(`</a>`)
 }
 
 func (p *Parser) writePartial(b *strings.Builder, pt *Partial, s *State) {
-	var sa strings.Builder
-	appendStyleAttr(&sa, pt.Style, s.DefaultBG)
 	b.WriteString(`<div class="Mu-partial" data-partial-url="`)
 	b.WriteString(htmlAttr(pt.URL))
 	b.WriteString(`"`)
@@ -224,11 +217,7 @@ func (p *Parser) writePartial(b *strings.Builder, pt *Partial, s *State) {
 		b.WriteString(strconv.Itoa(pt.RefreshSeconds))
 		b.WriteString(`"`)
 	}
-	if sa.Len() > 0 {
-		b.WriteString(` style="`)
-		b.WriteString(sa.String())
-		b.WriteString(`"`)
-	}
+	appendQuotedHTMLStyleAttr(b, pt.Style, s.DefaultBG)
 	b.WriteString(`></div>`)
 }
 

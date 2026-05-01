@@ -56,19 +56,12 @@ func (p *Parser) ConvertMicronToHTML(markup string) string {
 		}
 	}
 	var wrap strings.Builder
-	if defaultFG != "" && defaultFG != "default" {
-		if fg := ColorToCSS(defaultFG); fg != "" {
-			wrap.WriteString("color:")
-			wrap.WriteString(fg)
-			wrap.WriteByte(';')
-		}
+	wrap.Grow(64)
+	if defaultFG != "" && defaultFG != "default" && tryAppendColorProperty(&wrap, "color:", defaultFG) {
+		wrap.WriteByte(';')
 	}
-	if defaultBGVal != "" && defaultBGVal != "default" {
-		if bg := ColorToCSS(defaultBGVal); bg != "" {
-			wrap.WriteString("background-color:")
-			wrap.WriteString(bg)
-			wrap.WriteByte(';')
-		}
+	if defaultBGVal != "" && defaultBGVal != "default" && tryAppendColorProperty(&wrap, "background-color:", defaultBGVal) {
+		wrap.WriteByte(';')
 	}
 	if wrap.Len() > 0 {
 		var out strings.Builder

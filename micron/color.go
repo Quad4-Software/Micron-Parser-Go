@@ -19,16 +19,37 @@ const (
 // color strings, or returns an empty string when c is empty, "default", or not
 // recognized.
 func ColorToCSS(c string) string {
-	if c == "" || c == defaultBG {
+	if !micronColorToken(c) {
 		return ""
 	}
+	var b strings.Builder
+	b.Grow(8)
+	writeMicronColorHex(&b, c)
+	return b.String()
+}
+
+func micronColorToken(c string) bool {
+	if c == "" || c == defaultBG {
+		return false
+	}
 	if len(c) == 3 && isHex3(c) {
-		return "#" + c
+		return true
 	}
 	if len(c) == 6 && isHex6(c) {
-		return "#" + c
+		return true
 	}
-	if len(c) == 3 && c[0] == 'g' {
+	return len(c) == 3 && c[0] == 'g'
+}
+
+func writeMicronColorHex(b *strings.Builder, c string) {
+	switch {
+	case len(c) == 3 && isHex3(c):
+		b.WriteByte('#')
+		b.WriteString(c)
+	case len(c) == 6 && isHex6(c):
+		b.WriteByte('#')
+		b.WriteString(c)
+	default:
 		v, err := strconv.Atoi(c[1:])
 		if err != nil || v < 0 {
 			v = 50
@@ -37,9 +58,24 @@ func ColorToCSS(c string) string {
 			v = 99
 		}
 		h := byte(math.Floor(float64(v) * 2.55))
-		return rgbHex(h, h, h)
+		const hx = "0123456789abcdef"
+		b.WriteByte('#')
+		b.WriteByte(hx[h>>4])
+		b.WriteByte(hx[h&0xf])
+		b.WriteByte(hx[h>>4])
+		b.WriteByte(hx[h&0xf])
+		b.WriteByte(hx[h>>4])
+		b.WriteByte(hx[h&0xf])
 	}
-	return ""
+}
+
+func tryAppendColorProperty(b *strings.Builder, prop string, c string) bool {
+	if !micronColorToken(c) {
+		return false
+	}
+	b.WriteString(prop)
+	writeMicronColorHex(b, c)
+	return true
 }
 
 func isHex3(s string) bool {
@@ -64,17 +100,29 @@ func isHexByte(b byte) bool {
 	return (b >= '0' && b <= '9') || (b >= 'a' && b <= 'f') || (b >= 'A' && b <= 'F')
 }
 
-func rgbHex(r, g, b byte) string {
-	const hx = "0123456789abcdef"
-	var out [7]byte
-	out[0] = '#'
-	out[1] = hx[r>>4]
-	out[2] = hx[r&0xf]
-	out[3] = hx[g>>4]
-	out[4] = hx[g&0xf]
-	out[5] = hx[b>>4]
-	out[6] = hx[b&0xf]
-	return string(out[:])
+func appendStyleAttr(b *strings.Builder, st Style, defaultBG string) {
+	if tryAppendColorProperty(b, "color:", st.FG) {
+		b.WriteByte(';')
+	}
+	if st.BG != defaultBG && st.BG != "default" && tryAppendColorProperty(b, "background-color:", st.BG) {
+		b.WriteString(";display:inline-block;")
+	}
+	if st.Bold {
+		b.WriteString("font-weight:bold;")
+	}
+	if st.Underline {
+		b.WriteString("text-decoration:underline;")
+	}
+	if st.Italic {
+		b.WriteString("font-style:italic;")
+	}
+}
+
+func styleAttr(st Style, defaultBG string) string {
+	var b strings.Builder
+	b.Grow(96)
+	appendStyleAttr(&b, st, defaultBG)
+	return b.String()
 }
 
 func headingStyle(p *Parser, level int) Style {
@@ -135,34 +183,4 @@ func stylesEqual(a, b *Style) bool {
 	}
 	return a.FG == b.FG && a.BG == b.BG && a.Bold == b.Bold &&
 		a.Underline == b.Underline && a.Italic == b.Italic
-}
-
-func styleAttr(st Style, defaultBG string) string {
-	var b strings.Builder
-	appendStyleAttr(&b, st, defaultBG)
-	return b.String()
-}
-
-func appendStyleAttr(b *strings.Builder, st Style, defaultBG string) {
-	fg := ColorToCSS(st.FG)
-	if fg != "" && fg != "default" {
-		b.WriteString("color:")
-		b.WriteString(fg)
-		b.WriteByte(';')
-	}
-	bg := ColorToCSS(st.BG)
-	if bg != "" && st.BG != defaultBG && st.BG != "default" {
-		b.WriteString("background-color:")
-		b.WriteString(bg)
-		b.WriteString(";display:inline-block;")
-	}
-	if st.Bold {
-		b.WriteString("font-weight:bold;")
-	}
-	if st.Underline {
-		b.WriteString("text-decoration:underline;")
-	}
-	if st.Italic {
-		b.WriteString("font-style:italic;")
-	}
 }

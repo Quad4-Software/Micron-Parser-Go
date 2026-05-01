@@ -46,18 +46,12 @@ func (p *Parser) parseLineInto(out *strings.Builder, line string, s *State) int 
 				p.styleToState(latched, s)
 				inner := p.joinLinePartsHTML(parts, s)
 				if inner != "" {
-					fg := ColorToCSS(style.FG)
-					bg := ColorToCSS(style.BG)
 					var hs strings.Builder
 					hs.WriteString(`<div style="display:inline-block;width:100%;`)
-					if fg != "" {
-						hs.WriteString("color:")
-						hs.WriteString(fg)
+					if tryAppendColorProperty(&hs, "color:", style.FG) {
 						hs.WriteByte(';')
 					}
-					if bg != "" {
-						hs.WriteString("background-color:")
-						hs.WriteString(bg)
+					if tryAppendColorProperty(&hs, "background-color:", style.BG) {
 						hs.WriteByte(';')
 					}
 					hs.WriteString(`"><div style="`)
@@ -72,19 +66,15 @@ func (p *Parser) parseLineInto(out *strings.Builder, line string, s *State) int 
 			}
 			if line[0] == '-' {
 				if len(line) == 1 {
-					fg := ColorToCSS(s.FGColor)
-					bg := ColorToCSS(s.BGColor)
 					var b strings.Builder
 					b.WriteString(`<hr style="all:revert;`)
-					if fg != "" {
-						b.WriteString("border-color:")
-						b.WriteString(fg)
+					if tryAppendColorProperty(&b, "border-color:", s.FGColor) {
 						b.WriteByte(';')
 					}
 					b.WriteString(`margin:0.5em 0.5em 0.5em 0.5em;`)
-					if bg != "" {
-						b.WriteString("box-shadow:0 0 0 0.5em ")
-						b.WriteString(bg)
+					if micronColorToken(s.BGColor) {
+						b.WriteString(`box-shadow:0 0 0 0.5em `)
+						writeMicronColorHex(&b, s.BGColor)
 						b.WriteByte(';')
 					}
 					appendSectionIndentStyle(&b, s)
@@ -94,20 +84,13 @@ func (p *Parser) parseLineInto(out *strings.Builder, line string, s *State) int 
 				}
 				_, firstSize := utf8.DecodeRuneInString(line)
 				r, _ := utf8.DecodeRuneInString(line[firstSize:])
-				fg := ColorToCSS(s.FGColor)
 				var b strings.Builder
 				b.WriteString(`<div style="white-space:pre;white-space:nowrap;overflow:hidden;width:100%;`)
-				if fg != "" {
-					b.WriteString("color:")
-					b.WriteString(fg)
+				if tryAppendColorProperty(&b, "color:", s.FGColor) {
 					b.WriteByte(';')
 				}
-				if s.BGColor != s.DefaultBG && s.BGColor != "default" {
-					if bg := ColorToCSS(s.BGColor); bg != "" {
-						b.WriteString("background-color:")
-						b.WriteString(bg)
-						b.WriteByte(';')
-					}
+				if s.BGColor != s.DefaultBG && s.BGColor != "default" && tryAppendColorProperty(&b, "background-color:", s.BGColor) {
+					b.WriteByte(';')
 				}
 				appendSectionIndentStyle(&b, s)
 				b.WriteString(`">`)
@@ -142,11 +125,9 @@ func (p *Parser) parseLineInto(out *strings.Builder, line string, s *State) int 
 		return lineHTML
 	}
 	if s.BGColor != s.DefaultBG && s.BGColor != "default" {
-		bg := ColorToCSS(s.BGColor)
-		if bg != "" {
-			var b strings.Builder
-			b.WriteString(`<div style="background-color:`)
-			b.WriteString(bg)
+		var b strings.Builder
+		b.WriteString(`<div style="`)
+		if tryAppendColorProperty(&b, "background-color:", s.BGColor) {
 			b.WriteString(`;width:100%;display:block;height:1.2em;"><div style="`)
 			appendSectionIndentStyleNoSemi(&b, s)
 			b.WriteString(`">`)
@@ -217,11 +198,9 @@ func appendWrappedAlignedLineHTML(out *strings.Builder, inner string, s *State) 
 	b.WriteString(`</div>`)
 	wrapped := b.String()
 	if s.BGColor != s.DefaultBG && s.BGColor != "default" {
-		bg := ColorToCSS(s.BGColor)
-		if bg != "" {
-			var bgWrap strings.Builder
-			bgWrap.WriteString(`<div style="background-color:`)
-			bgWrap.WriteString(bg)
+		var bgWrap strings.Builder
+		bgWrap.WriteString(`<div style="`)
+		if tryAppendColorProperty(&bgWrap, "background-color:", s.BGColor) {
 			bgWrap.WriteString(`;width:100%;display:block;">`)
 			bgWrap.WriteString(wrapped)
 			bgWrap.WriteString(`</div>`)
