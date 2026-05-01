@@ -109,6 +109,7 @@
   }
   .tab-list {
     display: flex;
+    align-items: stretch;
     gap: 0.4rem;
     overflow-x: auto;
     flex: 1;
@@ -141,6 +142,9 @@
     background: rgba(61, 139, 253, 0.12);
   }
   .tab-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     padding: 0.35rem 0.45rem;
     color: var(--muted);
     line-height: 1;
@@ -150,10 +154,14 @@
     background: rgba(248, 81, 73, 0.12);
   }
   .tab-add-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    align-self: stretch;
     border: 1px solid var(--border);
     background: #10161f;
     border-radius: 0.35rem;
-    font-weight: 600;
+    line-height: 1;
     min-width: 2rem;
   }
   .tab-add-btn:hover {
@@ -807,7 +815,7 @@ To display literal content, for example source-code, or blocks of text that shou
       closeBtn.type = "button";
       closeBtn.className = "tab-close";
       closeBtn.setAttribute("aria-label", "Close tab");
-      closeBtn.textContent = "\u00d7";
+      closeBtn.textContent = "×";
       closeBtn.addEventListener("click", (ev) => {
         ev.stopPropagation();
         closeTabById(tab.id);
