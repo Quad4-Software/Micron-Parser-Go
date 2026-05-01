@@ -1,0 +1,79 @@
+# Tagged releases: WASM binary, web.zip (web/ with wasm_exec.js and micron.wasm), SHASUMS256.txt.
+#
+# Bump action versions by changing the tag in `uses:` and the SHA in the comment
+# block below (verify with):
+#   curl -sL https://api.github.com/repos/<org>/<repo>/git/refs/tags/<tag> | jq -r '.object.sha'
+# For annotated third-party tags, resolve the commit:
+#   curl -sL https://api.github.com/repos/<org>/<repo>/git/tags/<tag_sha> | jq -r '.object.sha'
+#
+# Pinned first-party actions (bump tag and SHA together when upgrading):
+#   actions/checkout@v6.0.1            8e8c483db84b4bee98b60c0593521ed34d9990e8
+#   actions/setup-go@v6.1.0            4dc6199c7b1a012772edbd06daecab0f50c9053c
+#
+# Pinned third-party actions:
+#   softprops/action-gh-release@v2.6.2 3bb12739c298aeb8a4eeaf626c5b8d85266b0e65
+
+name: Release
+
+on:
+    push:
+        tags:
+            - "**"
+
+permissions:
+    contents: write
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
+
+env:
+    GO_VERSION: "1.26.2"
+
+jobs:
+    release:
+        name: Build and publish
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+        steps:
+            - name: Checkout
+              uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+
+            - name: Set up Go
+              uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c
+              with:
+                  go-version: ${{ env.GO_VERSION }}
+                  cache: true
+
+            - name: Build WASM and web bundle
+              run: |
+                  set -euo pipefail
+                  make wasm
+                  cp web/micron.wasm micron-parser-go.wasm
+                  python3 - <<'PY'
+                  import zipfile
+                  from pathlib import Path
+
+                  web = Path("web")
+                  with zipfile.ZipFile(
+                      "web.zip", "w", compression=zipfile.ZIP_DEFLATED
+                  ) as zf:
+                      for path in sorted(web.rglob("*")):
+                          if path.is_file():
+                              zf.write(path, path.as_posix())
+                  PY
+
+            - name: SHA256 checksums
+              run: |
+                  set -euo pipefail
+                  sha256sum micron-parser-go.wasm web.zip > SHASUMS256.txt
+
+            - name: Create GitHub release
+              uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65
+              with:
+                  files: |
+                      micron-parser-go.wasm
+                      web.zip
+                      SHASUMS256.txt
+                  fail_on_unmatched_files: true
+                  generate_release_notes: true
