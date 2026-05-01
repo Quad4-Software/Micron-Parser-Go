@@ -51,6 +51,15 @@ func TestPlainLinePreservesBackslashesFiglet(t *testing.T) {
 	}
 }
 
+func TestMarkupLinePreservesFigletBackslashSlash(t *testing.T) {
+	line := "|  |__   `---|  |----`|  | |  \\  /  | x"
+	p := Parser{DarkTheme: true, ForceMonospace: true}
+	out := p.ConvertMicronToHTML(line)
+	if strings.Count(out, "\\") < 1 {
+		t.Fatalf("want preserved ASCII \\ near /, got %q", out)
+	}
+}
+
 func TestMonospaceMuMntCountDynamicPlainASCII(t *testing.T) {
 	rng := rand.New(rand.NewSource(80201))
 	for range 300 {

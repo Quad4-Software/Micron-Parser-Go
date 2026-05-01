@@ -106,7 +106,7 @@ func FuzzBuildRequestPayload(f *testing.F) {
 	f.Add("dest`a=1|b=2", "user|x", "k=v|u=w")
 	f.Fuzz(func(t *testing.T, destination, fieldsSpec, keysBlob string) {
 		fields := map[string]string{}
-		for _, kv := range strings.Split(keysBlob, "|") {
+		for kv := range strings.SplitSeq(keysBlob, "|") {
 			k, v, ok := strings.Cut(kv, "=")
 			if !ok || k == "" {
 				continue

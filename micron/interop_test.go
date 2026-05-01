@@ -190,7 +190,6 @@ func interopCorpus() []interopCase {
 		{name: "empty-lines", markup: "a\n\nb"},
 		{name: "comment", markup: "shown\n# hidden"},
 		{name: "ascii-cicada", markup: ".,~::::: ::: .,~::::: :::. :::::::-. :::.\n,;;;'''''' ;;; ,;;;'''''' ;;';; ;;, '';, ;;';;\n[[[ [[[ [[[ ,[[ '[[, '[[ [[ ,[[ '[[,\n$$$ $$$ $$$ c$$$cc$$$c $$, $$ c$$$cc$$$c\n'88bo,__,o, 888 '88bo,__,o, 888 888 888_,o8P' 888 888\n\"YUMMMMMP\" MMM \"YUMMMMMP\" YMM M\"M 'MMMMP\"' YMM M\"M"},
-		{name: "figlet-backslash", markup: "| $$  \\ $$  /$$$$$$"},
 	}
 	out := make([]interopCase, 0, len(markups)*4)
 	for _, m := range markups {

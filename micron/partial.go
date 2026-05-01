@@ -21,12 +21,12 @@ func (p *Parser) parsePartial(line string, start int, s *State) (skip int, pt *P
 	if raw == "" {
 		return 0, nil
 	}
-	sep := strings.IndexByte(raw, '`')
+	before, after, ok := strings.Cut(raw, "`")
 	urlPart := raw
 	refreshPart := ""
-	if sep >= 0 {
-		urlPart = raw[:sep]
-		refreshPart = raw[sep+1:]
+	if ok {
+		urlPart = before
+		refreshPart = after
 	}
 	url := strings.TrimSpace(urlPart)
 	if url == "" {

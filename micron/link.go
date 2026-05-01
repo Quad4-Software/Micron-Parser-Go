@@ -16,18 +16,18 @@ func (p *Parser) parseLink(line string, start int, s *State) (skip int, lk *Link
 	end += start + 1
 	linkData := line[start+1 : end]
 	var label, url, fields string
-	i1 := strings.IndexByte(linkData, '`')
-	if i1 < 0 {
+	before, after, ok := strings.Cut(linkData, "`")
+	if !ok {
 		url = linkData
 	} else {
-		label = linkData[:i1]
-		rest := linkData[i1+1:]
-		i2 := strings.IndexByte(rest, '`')
-		if i2 < 0 {
+		label = before
+		rest := after
+		before, after, ok := strings.Cut(rest, "`")
+		if !ok {
 			url = rest
 		} else {
-			url = rest[:i2]
-			fields = rest[i2+1:]
+			url = before
+			fields = after
 			if strings.IndexByte(fields, '`') >= 0 {
 				return 0, nil
 			}

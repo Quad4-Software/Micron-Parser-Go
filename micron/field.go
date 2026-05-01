@@ -26,18 +26,18 @@ func (p *Parser) parseField(line string, start int, s *State) (skip int, f *Fiel
 	value := ""
 	prechecked := false
 
-	if sep := strings.IndexByte(fieldContent, '|'); sep >= 0 {
-		flags := fieldContent[:sep]
-		rest := fieldContent[sep+1:]
+	if before, after, ok := strings.Cut(fieldContent, "|"); ok {
+		flags := before
+		rest := after
 		name = rest
 		value = ""
 		if next := strings.IndexByte(rest, '|'); next >= 0 {
 			name = rest[:next]
 			rest = rest[next+1:]
 			value = rest
-			if more := strings.IndexByte(rest, '|'); more >= 0 {
-				value = rest[:more]
-				prechecked = rest[more+1:] == "*"
+			if before, after, ok := strings.Cut(rest, "|"); ok {
+				value = before
+				prechecked = after == "*"
 			}
 		}
 		if strings.Contains(flags, "^") {
