@@ -21,7 +21,11 @@ func randUTF8Chunk(r *rand.Rand, maxBytes int) string {
 	for i := range b {
 		switch r.IntN(8) {
 		case 0:
-			b[i] = byte(r.IntN(256))
+			v := byte(r.IntN(256))
+			if v == 0 {
+				v = 1
+			}
+			b[i] = v
 		case 1:
 			b[i] = '\n'
 		case 2:

@@ -44,3 +44,33 @@ func TestSecurityKeepsMarkupInsideTextEscaped(t *testing.T) {
 		t.Fatal(out)
 	}
 }
+
+func TestSecurityPlainLineAngleBracketsEscapedAllModes(t *testing.T) {
+	in := "<svg><script>alert(1)</script></svg>"
+	for _, p := range []Parser{
+		{DarkTheme: true, ForceMonospace: true},
+		{DarkTheme: true, ForceMonospace: false},
+		{DarkTheme: false, ForceMonospace: true},
+		{DarkTheme: false, ForceMonospace: false},
+	} {
+		out := p.ConvertMicronToHTML(in)
+		if strings.Contains(strings.ToLower(out), "<script") {
+			t.Fatalf("parser %#v leaked script tag: %s", p, out)
+		}
+		assertFuzzOutputHTMLSafety(t, out)
+	}
+}
+
+func TestSecurityMalformedMarkupStillBalancesAngles(t *testing.T) {
+	in := "<<<>><<div>>>>>>"
+	for _, p := range []Parser{
+		{DarkTheme: true, ForceMonospace: true},
+		{DarkTheme: false, ForceMonospace: false},
+	} {
+		out := p.ConvertMicronToHTML(in)
+		if strings.Count(out, "<") != strings.Count(out, ">") {
+			t.Fatalf("parser %#v: %q", p, out)
+		}
+		assertFuzzOutputHTMLSafety(t, out)
+	}
+}

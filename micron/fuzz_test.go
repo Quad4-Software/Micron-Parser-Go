@@ -11,11 +11,47 @@ import (
 func assertFuzzOutputHTMLSafety(t *testing.T, out string) {
 	t.Helper()
 	lower := strings.ToLower(out)
-	if strings.Contains(lower, "<script") {
-		t.Fatalf("unexpected script-like tag in output")
+	forbidden := []string{
+		"<script",
+		"</script",
+		"<iframe",
+		"<frame",
+		"<object",
+		"<embed",
+		"<link ",
+		"<meta ",
+		"<base ",
+		"<style",
+		"</style",
+		"<template",
+		"<svg",
+		"<math",
+		"<body",
+		"<head",
+		"<html",
+		"<form",
 	}
-	if strings.Contains(lower, "javascript:") {
-		t.Fatalf("unexpected javascript: URL in output")
+	for _, frag := range forbidden {
+		if strings.Contains(lower, frag) {
+			t.Fatalf("forbidden fragment %q in output", frag)
+		}
+	}
+}
+
+func fuzzConvertMicronAllModes(t *testing.T, in string) {
+	t.Helper()
+	parsers := []Parser{
+		{DarkTheme: true, ForceMonospace: true},
+		{DarkTheme: true, ForceMonospace: false},
+		{DarkTheme: false, ForceMonospace: true},
+		{DarkTheme: false, ForceMonospace: false},
+	}
+	for _, p := range parsers {
+		out := p.ConvertMicronToHTML(in)
+		if strings.Count(out, "<") != strings.Count(out, ">") {
+			t.Fatalf("unbalanced angle brackets for %#v: %q", p, out)
+		}
+		assertFuzzOutputHTMLSafety(t, out)
 	}
 }
 
@@ -28,27 +64,32 @@ func FuzzConvertMicronToHTML(f *testing.F) {
 		"`<24|name`value>",
 		"`[link`example.com`x=y|field]",
 		"`=\n`!literal\n`=",
+		"<script>alert(1)</script>",
+		"<img src=x onerror=alert(1)> plain line no backticks",
+		"| $$  \\ $$  /$$$$$$",
+		"plain \\\\ two backslashes",
+		"`[x`javascript:alert(1)`]",
+		"`{x:data:text/html,<svg/onload=alert(1)>}",
 	}
 	for _, s := range seeds {
 		f.Add(s)
 	}
 	f.Fuzz(func(t *testing.T, in string) {
-		p := Parser{DarkTheme: true, ForceMonospace: true}
-		out := p.ConvertMicronToHTML(in)
-		if strings.Count(out, "<") != strings.Count(out, ">") {
-			t.Fatalf("possibly malformed html: %q", out)
-		}
-		assertFuzzOutputHTMLSafety(t, out)
+		fuzzConvertMicronAllModes(t, in)
 	})
 }
 
 func FuzzLightThemeConvertMicronToHTML(f *testing.F) {
-	f.Add("x")
-	f.Add("`{a:/p.mu}")
+	for _, s := range []string{
+		"x",
+		"`{a:/p.mu}",
+		"<svg onload=evil>",
+		"`\\`*still markup line",
+	} {
+		f.Add(s)
+	}
 	f.Fuzz(func(t *testing.T, in string) {
-		p := Parser{DarkTheme: false, ForceMonospace: false}
-		out := p.ConvertMicronToHTML(in)
-		assertFuzzOutputHTMLSafety(t, out)
+		fuzzConvertMicronAllModes(t, in)
 	})
 }
 
