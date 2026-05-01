@@ -7,6 +7,30 @@ import (
 	"strings"
 )
 
+func startsMicronFormattingDirective(line string, pos int) bool {
+	if pos >= len(line) {
+		return false
+	}
+	switch line[pos] {
+	case '!', '*', '_', 'F', 'f', 'B', 'b', 'c', 'l', 'r', 'a', '[', '<', '{':
+		return true
+	default:
+		return line[pos] >= '0' && line[pos] <= '9'
+	}
+}
+
+func backslashEscapesOnlyMicronSpecial(line string, pos int) bool {
+	if pos >= len(line) {
+		return false
+	}
+	switch line[pos] {
+	case '`', '\\':
+		return true
+	default:
+		return false
+	}
+}
+
 func (p *Parser) makeOutput(s *State, line string) []linePart {
 	if s.Literal {
 		if line == "\\`=" {
@@ -130,6 +154,11 @@ func (p *Parser) makeOutput(s *State, line string) []linePart {
 			continue
 		}
 		if c == '\\' {
+			if !backslashEscapesOnlyMicronSpecial(line, i+1) {
+				part.WriteByte('\\')
+				i++
+				continue
+			}
 			escape = true
 			i++
 			continue
@@ -144,6 +173,11 @@ func (p *Parser) makeOutput(s *State, line string) []linePart {
 				s.BGColor = s.DefaultBG
 				s.Align = s.DefaultAlign
 				i += 2
+				continue
+			}
+			if !startsMicronFormattingDirective(line, i+1) {
+				part.WriteByte('`')
+				i++
 				continue
 			}
 			flushPart()
