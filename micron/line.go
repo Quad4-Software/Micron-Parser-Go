@@ -122,12 +122,10 @@ func (p *Parser) parseLineInto(out *strings.Builder, line string, s *State) int 
 				return lineHTML
 			}
 		}
-		if !p.ForceMonospace && !s.Literal && strings.IndexByte(line, '`') < 0 {
-			text := line
-			if strings.IndexByte(line, '\\') >= 0 {
-				text = unescapePlainText(line)
-			}
-			appendWrappedAlignedLineHTML(out, p.fastPlainInner(text, s), s)
+		if !s.Literal && strings.IndexByte(line, '`') < 0 {
+			parts := p.makeOutput(s, line)
+			inner := p.joinLinePartsHTML(parts, s)
+			appendWrappedAlignedLineHTML(out, inner, s)
 			return lineHTML
 		}
 		if !p.ForceMonospace && s.Literal {
@@ -206,29 +204,6 @@ func cachedStateStyleAttr(s *State) string {
 	}, s.DefaultBG)
 	s.styleAttrMap[key] = v
 	return v
-}
-
-func unescapePlainText(line string) string {
-	if strings.IndexByte(line, '\\') < 0 {
-		return line
-	}
-	var b strings.Builder
-	b.Grow(len(line))
-	escape := false
-	for i := 0; i < len(line); i++ {
-		c := line[i]
-		if escape {
-			b.WriteByte(c)
-			escape = false
-			continue
-		}
-		if c == '\\' {
-			escape = true
-			continue
-		}
-		b.WriteByte(c)
-	}
-	return b.String()
 }
 
 func appendWrappedAlignedLineHTML(out *strings.Builder, inner string, s *State) {

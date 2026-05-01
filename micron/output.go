@@ -3,13 +3,20 @@
 
 package micron
 
-import "strings"
+import (
+	"strings"
+)
 
 func (p *Parser) makeOutput(s *State, line string) []linePart {
 	if s.Literal {
 		if line == "\\`=" {
 			line = "`="
 		}
+		st := p.stateToStyle(s)
+		return []linePart{{style: st, text: line}}
+	}
+
+	if strings.IndexByte(line, '`') < 0 {
 		st := p.stateToStyle(s)
 		return []linePart{{style: st, text: line}}
 	}
