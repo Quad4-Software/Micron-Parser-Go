@@ -18,7 +18,9 @@
     --text: #e6edf3;
     --muted: #8b9cb3;
     --accent: #3d8bfd;
-    --mono: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas, monospace;
+    --mono: ui-monospace, "Cascadia Mono", "Cascadia Code", "Source Code Pro", "IBM Plex Mono",
+      "Noto Sans Mono", "Noto Sans Mono CJK SC", "Noto Sans Mono CJK JP", "Noto Sans SC",
+      Menlo, Consolas, monospace;
   }
   * { box-sizing: border-box; }
   html, body, #input, #preview-wrap, .tab-list {
@@ -262,10 +264,11 @@
   .Mu-nl { cursor: pointer; text-decoration: underline; color: var(--accent); }
   .Mu-mnt {
     display: inline-block;
-    width: 0.6em;
+    min-width: 1ch;
     text-align: center;
     white-space: pre;
     text-decoration: inherit;
+    font-variant-numeric: tabular-nums;
   }
   .Mu-mws {
     text-decoration: inherit;
