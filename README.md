@@ -88,16 +88,18 @@ _ = payload
 
 ## Performance
 
-Benchmarks use the **NomadNet guide** micron source from Micron-Parser-JS.
+Benchmarks use the **NomadNet guide** micron source from Micron-Parser-JS (`11248` input bytes).
 
 | Implementation | Environment | Mean time / conversion | Notes |
 |----------------|---------------|------------------------|--------|
-| This package (Go) | `go test` native amd64 | ~2.36 ms | 10× `BenchmarkConvertNomadNetGuide` runs; ~2.19–2.57 ms/op, ~4.71 MB/op, 5203 allocs/op |
-| This package (Go WASM) | Browser `bench.html` | ~3.74 ms | 10 measured runs; ~3.48–4.05 ms; ~2.87 MiB/s |
-| Reference [micron-parser-js](https://github.com/RFnexus/micron-parser-js) | Browser `bench.html` | ~41.11 ms | 10 measured runs; ~38.44–43.79 ms; ~0.26 MiB/s |
+| This package (Go) | `go test` native amd64 | ~1.38 ms | 10× `BenchmarkConvertNomadNetGuide` runs; ~1.31–1.47 ms/op, ~4.34 MB/op, 4176 allocs/op |
+| This package (Go WASM) | Browser `bench.html` | ~3.37 ms | 10 measured runs (64 inner iterations); stdev ~0.22 ms; min/max ~2.89–3.52 ms; ~3.18 MiB/s |
+| Reference [micron-parser-js](https://github.com/RFnexus/micron-parser-js) | Browser `bench.html` | ~41.28 ms | 10 measured runs (8 inner iterations); stdev ~1.04 ms; min/max ~39.68–43.40 ms; ~0.26 MiB/s |
 | Reference [micron-parser-js](https://github.com/RFnexus/micron-parser-js) | Node + DOM stub | ~21.0 ms | 10 measured runs; ~19.7–25.9 ms; ~0.51 MiB/s mean throughput |
 
 **WebAssembly:** The browser build uses the same Go code as the native benchmark, but timing includes JS/WASM call overhead and is strongly browser-dependent. It will not match the `go test` numbers above.
+
+**WASM vs reference JS (browser mean):** `12.24x` faster (`41.28 ms / 3.37 ms`).
 
 **Reproduce**
 
