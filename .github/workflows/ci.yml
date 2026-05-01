@@ -10,8 +10,9 @@
 #   actions/checkout@v6.0.1            8e8c483db84b4bee98b60c0593521ed34d9990e8
 #   actions/setup-go@v6.1.0            4dc6199c7b1a012772edbd06daecab0f50c9053c
 #   actions/setup-node@v6.1.0        395ad3262231945c25e8478fd5baf05154b1d79f
-# Third-party:
-#   securego/gosec@v2.22.10          6be2b51fd78feca86af91f5186b7964d76cb1256  (tag bfec35a3 -> object commit)
+#
+# Gosec runs via `go install` (same Go as setup-go) because the securego/gosec
+# Docker image may ship an older Go than go.mod requires.
 
 name: CI
 
@@ -39,6 +40,7 @@ env:
     FUZZTIME: "15s"
     GOVULN_VERSION: "v1.3.0"
     REVIVE_VERSION: "v1.11.0"
+    GOSEC_VERSION: "v2.22.10"
 
 jobs:
     verify:
@@ -86,14 +88,7 @@ jobs:
               with:
                   node-version: ${{ env.NODE_VERSION }}
 
-            - name: Run Gosec
-              if: matrix.task.id == 'gosec'
-              uses: securego/gosec@6be2b51fd78feca86af91f5186b7964d76cb1256
-              with:
-                  args: '-exclude-dir=examples ./...'
-
             - name: Run matrix task
-              if: matrix.task.id != 'gosec'
               run: |
                   set -euo pipefail
                   case "${{ matrix.task.id }}" in
@@ -101,6 +96,10 @@ jobs:
                       go vet ./...
                       go install github.com/mgechev/revive@${{ env.REVIVE_VERSION }}
                       "$(go env GOPATH)/bin/revive" -config revive.toml -formatter friendly ./micron/*
+                      ;;
+                    gosec)
+                      go install github.com/securego/gosec/v2/cmd/gosec@${{ env.GOSEC_VERSION }}
+                      "$(go env GOPATH)/bin/gosec" -exclude-dir=examples ./...
                       ;;
                     test)
                       go test -count=1 -race ./...
