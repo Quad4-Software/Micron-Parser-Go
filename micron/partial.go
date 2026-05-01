@@ -21,14 +21,20 @@ func (p *Parser) parsePartial(line string, start int, s *State) (skip int, pt *P
 	if raw == "" {
 		return 0, nil
 	}
-	parts := strings.Split(raw, "`")
-	url := strings.TrimSpace(parts[0])
+	sep := strings.IndexByte(raw, '`')
+	urlPart := raw
+	refreshPart := ""
+	if sep >= 0 {
+		urlPart = raw[:sep]
+		refreshPart = raw[sep+1:]
+	}
+	url := strings.TrimSpace(urlPart)
 	if url == "" {
 		return 0, nil
 	}
 	refresh := 0
-	if len(parts) > 1 {
-		secs, err := strconv.Atoi(strings.TrimSpace(parts[1]))
+	if refreshPart != "" {
+		secs, err := strconv.Atoi(strings.TrimSpace(refreshPart))
 		if err == nil && secs > 0 {
 			refresh = secs
 		}

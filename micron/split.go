@@ -63,10 +63,30 @@ func (p *Parser) appendSplitAtSpaces(b *strings.Builder, line string) {
 }
 
 func (p *Parser) appendForceMonospace(b *strings.Builder, line string) {
-	for len(line) > 0 {
-		r, sz := utf8.DecodeRuneInString(line)
-		line = line[sz:]
+	for i := 0; i < len(line); {
+		c := line[i]
 		b.WriteString(`<span class="Mu-mnt">`)
+		if c < utf8.RuneSelf {
+			switch c {
+			case '&':
+				b.WriteString("&amp;")
+			case '<':
+				b.WriteString("&lt;")
+			case '>':
+				b.WriteString("&gt;")
+			case '"':
+				b.WriteString("&#34;")
+			case '\'':
+				b.WriteString("&#39;")
+			default:
+				b.WriteByte(c)
+			}
+			i++
+			b.WriteString(`</span>`)
+			continue
+		}
+		r, sz := utf8.DecodeRuneInString(line[i:])
+		i += sz
 		switch r {
 		case '&':
 			b.WriteString("&amp;")

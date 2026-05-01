@@ -4,8 +4,8 @@
 package micron
 
 import (
-	"fmt"
 	htmlpkg "html"
+	"strconv"
 	"strings"
 )
 
@@ -25,10 +25,11 @@ func (p *Parser) appendOutput(b *strings.Builder, parts []linePart, s *State) {
 		if body == "" {
 			return
 		}
-		sa := styleAttr(st, s.DefaultBG)
-		if sa != "" {
+		var sa strings.Builder
+		appendStyleAttr(&sa, st, s.DefaultBG)
+		if sa.Len() > 0 {
 			b.WriteString(`<span style="`)
-			b.WriteString(sa)
+			b.WriteString(sa.String())
 			b.WriteString(`">`)
 			b.WriteString(body)
 			b.WriteString(`</span>`)
@@ -64,53 +65,84 @@ func (p *Parser) appendOutput(b *strings.Builder, parts []linePart, s *State) {
 		} else if p.ForceMonospace {
 			p.appendSplitAtSpaces(&span, pr.text)
 		} else {
-			span.WriteString(htmlText(pr.text))
+			appendHTMLText(&span, pr.text)
 		}
 	}
 	flush()
 }
 
 func (p *Parser) writeField(b *strings.Builder, f *Field, s *State) {
-	sa := styleAttr(f.Style, s.DefaultBG)
-	styleOpen := ""
-	if sa != "" {
-		styleOpen = ` style="` + sa + `"`
-	}
+	var sa strings.Builder
+	appendStyleAttr(&sa, f.Style, s.DefaultBG)
+	hasStyle := sa.Len() > 0
 	switch f.Kind {
 	case FieldCheckbox:
-		chk := ""
-		if f.Prechecked {
-			chk = ` checked`
+		b.WriteString(`<label`)
+		if hasStyle {
+			b.WriteString(` style="`)
+			b.WriteString(sa.String())
+			b.WriteString(`"`)
 		}
-		fmt.Fprintf(b, `<label%s><input type="checkbox" name="%s" value="%s"%s/> %s</label>`,
-			styleOpen, htmlAttr(f.Name), htmlAttr(f.Value), chk, htmlText(f.Label))
+		b.WriteString(`><input type="checkbox" name="`)
+		b.WriteString(htmlAttr(f.Name))
+		b.WriteString(`" value="`)
+		b.WriteString(htmlAttr(f.Value))
+		b.WriteString(`"`)
+		if f.Prechecked {
+			b.WriteString(` checked`)
+		}
+		b.WriteString(`/> `)
+		appendHTMLText(b, f.Label)
+		b.WriteString(`</label>`)
 	case FieldRadio:
-		chk := ""
-		if f.Prechecked {
-			chk = ` checked`
+		b.WriteString(`<label`)
+		if hasStyle {
+			b.WriteString(` style="`)
+			b.WriteString(sa.String())
+			b.WriteString(`"`)
 		}
-		fmt.Fprintf(b, `<label%s><input type="radio" name="%s" value="%s"%s/> %s</label>`,
-			styleOpen, htmlAttr(f.Name), htmlAttr(f.Value), chk, htmlText(f.Label))
+		b.WriteString(`><input type="radio" name="`)
+		b.WriteString(htmlAttr(f.Name))
+		b.WriteString(`" value="`)
+		b.WriteString(htmlAttr(f.Value))
+		b.WriteString(`"`)
+		if f.Prechecked {
+			b.WriteString(` checked`)
+		}
+		b.WriteString(`/> `)
+		appendHTMLText(b, f.Label)
+		b.WriteString(`</label>`)
 	default:
 		t := "text"
 		if f.Masked {
 			t = "password"
 		}
-		sz := ""
-		if f.Width > 0 {
-			sz = fmt.Sprintf(` size="%d"`, f.Width)
+		b.WriteString(`<input`)
+		if hasStyle {
+			b.WriteString(` style="`)
+			b.WriteString(sa.String())
+			b.WriteString(`"`)
 		}
-		fmt.Fprintf(b, `<input%s type="%s" name="%s" value="%s"%s/>`,
-			styleOpen, t, htmlAttr(f.Name), htmlAttr(f.Value), sz)
+		b.WriteString(` type="`)
+		b.WriteString(t)
+		b.WriteString(`" name="`)
+		b.WriteString(htmlAttr(f.Name))
+		b.WriteString(`" value="`)
+		b.WriteString(htmlAttr(f.Value))
+		b.WriteString(`"`)
+		if f.Width > 0 {
+			b.WriteString(` size="`)
+			b.WriteString(strconv.Itoa(f.Width))
+			b.WriteString(`"`)
+		}
+		b.WriteString(`/>`)
 	}
 }
 
 func (p *Parser) writeLink(b *strings.Builder, lk *Link, s *State) {
-	sa := styleAttr(lk.Style, s.DefaultBG)
-	styleOpen := ""
-	if sa != "" {
-		styleOpen = ` style="` + sa + `"`
-	}
+	var sa strings.Builder
+	appendStyleAttr(&sa, lk.Style, s.DefaultBG)
+	hasStyle := sa.Len() > 0
 	direct := linkDirectURL(lk.URL)
 	if len(lk.Fields) == 0 {
 		b.WriteString(`<a class="Mu-nl" href="`)
@@ -120,14 +152,18 @@ func (p *Parser) writeLink(b *strings.Builder, lk *Link, s *State) {
 		b.WriteString(`" data-action="openNode" data-destination="`)
 		b.WriteString(htmlAttr(direct))
 		b.WriteString(`"`)
-		b.WriteString(styleOpen)
+		if hasStyle {
+			b.WriteString(` style="`)
+			b.WriteString(sa.String())
+			b.WriteString(`"`)
+		}
 		b.WriteString(`>`)
 		b.WriteString(lk.Label)
 		b.WriteString(`</a>`)
 		return
 	}
-	var submit []string
-	var reqPairs []string
+	var fieldStr strings.Builder
+	var reqPairs strings.Builder
 	foundAll := false
 	for _, f := range lk.Fields {
 		if f == "*" {
@@ -135,17 +171,23 @@ func (p *Parser) writeLink(b *strings.Builder, lk *Link, s *State) {
 			continue
 		}
 		if strings.Contains(f, "=") {
-			reqPairs = append(reqPairs, f)
+			if reqPairs.Len() > 0 {
+				reqPairs.WriteByte('|')
+			}
+			reqPairs.WriteString(f)
 			continue
 		}
-		submit = append(submit, f)
+		if fieldStr.Len() > 0 {
+			fieldStr.WriteByte('|')
+		}
+		fieldStr.WriteString(f)
 	}
-	fieldStr := strings.Join(submit, "|")
 	if foundAll {
-		fieldStr = "*"
+		fieldStr.Reset()
+		fieldStr.WriteByte('*')
 	}
-	if len(reqPairs) > 0 {
-		q := strings.Join(reqPairs, "|")
+	if reqPairs.Len() > 0 {
+		q := reqPairs.String()
 		if strings.Contains(direct, "`") {
 			direct = direct + "|" + q
 		} else {
@@ -159,27 +201,32 @@ func (p *Parser) writeLink(b *strings.Builder, lk *Link, s *State) {
 	b.WriteString(`" data-action="openNode" data-destination="`)
 	b.WriteString(htmlAttr(direct))
 	b.WriteString(`" data-fields="`)
-	b.WriteString(htmlAttr(fieldStr))
+	b.WriteString(htmlAttr(fieldStr.String()))
 	b.WriteString(`"`)
-	b.WriteString(styleOpen)
+	if hasStyle {
+		b.WriteString(` style="`)
+		b.WriteString(sa.String())
+		b.WriteString(`"`)
+	}
 	b.WriteString(`>`)
 	b.WriteString(lk.Label)
 	b.WriteString(`</a>`)
 }
 
 func (p *Parser) writePartial(b *strings.Builder, pt *Partial, s *State) {
-	sa := styleAttr(pt.Style, s.DefaultBG)
+	var sa strings.Builder
+	appendStyleAttr(&sa, pt.Style, s.DefaultBG)
 	b.WriteString(`<div class="Mu-partial" data-partial-url="`)
 	b.WriteString(htmlAttr(pt.URL))
 	b.WriteString(`"`)
 	if pt.RefreshSeconds > 0 {
 		b.WriteString(` data-partial-refresh="`)
-		b.WriteString(fmt.Sprintf("%d", pt.RefreshSeconds))
+		b.WriteString(strconv.Itoa(pt.RefreshSeconds))
 		b.WriteString(`"`)
 	}
-	if sa != "" {
+	if sa.Len() > 0 {
 		b.WriteString(` style="`)
-		b.WriteString(sa)
+		b.WriteString(sa.String())
 		b.WriteString(`"`)
 	}
 	b.WriteString(`></div>`)

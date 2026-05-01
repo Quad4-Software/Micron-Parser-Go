@@ -15,20 +15,23 @@ func (p *Parser) parseLink(line string, start int, s *State) (skip int, lk *Link
 	}
 	end += start + 1
 	linkData := line[start+1 : end]
-	parts := strings.Split(linkData, "`")
 	var label, url, fields string
-	switch len(parts) {
-	case 1:
+	i1 := strings.IndexByte(linkData, '`')
+	if i1 < 0 {
 		url = linkData
-	case 2:
-		label = parts[0]
-		url = parts[1]
-	case 3:
-		label = parts[0]
-		url = parts[1]
-		fields = parts[2]
-	default:
-		return 0, nil
+	} else {
+		label = linkData[:i1]
+		rest := linkData[i1+1:]
+		i2 := strings.IndexByte(rest, '`')
+		if i2 < 0 {
+			url = rest
+		} else {
+			url = rest[:i2]
+			fields = rest[i2+1:]
+			if strings.IndexByte(fields, '`') >= 0 {
+				return 0, nil
+			}
+		}
 	}
 	if url == "" {
 		return 0, nil
@@ -44,7 +47,7 @@ func (p *Parser) parseLink(line string, start int, s *State) (skip int, lk *Link
 	}
 	var fieldList []string
 	if fields != "" {
-		fieldList = strings.Split(fields, "|")
+		fieldList = splitPipeList(fields)
 	}
 	return end - start + 1, &Link{
 		URL:    url,
@@ -52,4 +55,23 @@ func (p *Parser) parseLink(line string, start int, s *State) (skip int, lk *Link
 		Fields: fieldList,
 		Style:  p.stateToStyle(s),
 	}
+}
+
+func splitPipeList(s string) []string {
+	if s == "" {
+		return nil
+	}
+	out := make([]string, 0, strings.Count(s, "|")+1)
+	start := 0
+	for start <= len(s) {
+		rel := strings.IndexByte(s[start:], '|')
+		if rel < 0 {
+			out = append(out, s[start:])
+			return out
+		}
+		next := start + rel
+		out = append(out, s[start:next])
+		start = next + 1
+	}
+	return out
 }

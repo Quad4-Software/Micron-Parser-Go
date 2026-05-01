@@ -66,10 +66,15 @@ func isHexByte(b byte) bool {
 
 func rgbHex(r, g, b byte) string {
 	const hx = "0123456789abcdef"
-	return "#" +
-		string([]byte{hx[r>>4], hx[r&0xf]}) +
-		string([]byte{hx[g>>4], hx[g&0xf]}) +
-		string([]byte{hx[b>>4], hx[b&0xf]})
+	var out [7]byte
+	out[0] = '#'
+	out[1] = hx[r>>4]
+	out[2] = hx[r&0xf]
+	out[3] = hx[g>>4]
+	out[4] = hx[g&0xf]
+	out[5] = hx[b>>4]
+	out[6] = hx[b&0xf]
+	return string(out[:])
 }
 
 func headingStyle(p *Parser, level int) Style {
@@ -134,6 +139,11 @@ func stylesEqual(a, b *Style) bool {
 
 func styleAttr(st Style, defaultBG string) string {
 	var b strings.Builder
+	appendStyleAttr(&b, st, defaultBG)
+	return b.String()
+}
+
+func appendStyleAttr(b *strings.Builder, st Style, defaultBG string) {
 	fg := ColorToCSS(st.FG)
 	if fg != "" && fg != "default" {
 		b.WriteString("color:")
@@ -150,14 +160,9 @@ func styleAttr(st Style, defaultBG string) string {
 		b.WriteString("font-weight:bold;")
 	}
 	if st.Underline {
-		if b.Len() > 0 {
-			b.WriteString("text-decoration:underline;")
-		} else {
-			b.WriteString("text-decoration:underline;")
-		}
+		b.WriteString("text-decoration:underline;")
 	}
 	if st.Italic {
 		b.WriteString("font-style:italic;")
 	}
-	return b.String()
 }

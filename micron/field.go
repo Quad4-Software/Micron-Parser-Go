@@ -26,19 +26,29 @@ func (p *Parser) parseField(line string, start int, s *State) (skip int, f *Fiel
 	value := ""
 	prechecked := false
 
-	if strings.Contains(fieldContent, "|") {
-		parts := strings.Split(fieldContent, "|")
-		flags := parts[0]
-		name = parts[1]
+	if sep := strings.IndexByte(fieldContent, '|'); sep >= 0 {
+		flags := fieldContent[:sep]
+		rest := fieldContent[sep+1:]
+		name = rest
+		value = ""
+		if next := strings.IndexByte(rest, '|'); next >= 0 {
+			name = rest[:next]
+			rest = rest[next+1:]
+			value = rest
+			if more := strings.IndexByte(rest, '|'); more >= 0 {
+				value = rest[:more]
+				prechecked = rest[more+1:] == "*"
+			}
+		}
 		if strings.Contains(flags, "^") {
 			kind = FieldRadio
-			flags = strings.ReplaceAll(flags, "^", "")
+			flags = stripByte(flags, '^')
 		} else if strings.Contains(flags, "?") {
 			kind = FieldCheckbox
-			flags = strings.ReplaceAll(flags, "?", "")
+			flags = stripByte(flags, '?')
 		} else if strings.Contains(flags, "!") {
 			masked = true
-			flags = strings.ReplaceAll(flags, "!", "")
+			flags = stripByte(flags, '!')
 		}
 		if flags != "" {
 			if w, err := strconv.Atoi(flags); err == nil {
@@ -49,12 +59,6 @@ func (p *Parser) parseField(line string, start int, s *State) (skip int, f *Fiel
 					width = w
 				}
 			}
-		}
-		if len(parts) > 2 {
-			value = parts[2]
-		}
-		if len(parts) > 3 && parts[3] == "*" {
-			prechecked = true
 		}
 	}
 
@@ -91,4 +95,18 @@ func (p *Parser) parseField(line string, start int, s *State) (skip int, f *Fiel
 			Style:  st,
 		}
 	}
+}
+
+func stripByte(s string, c byte) string {
+	if strings.IndexByte(s, c) < 0 {
+		return s
+	}
+	var b strings.Builder
+	b.Grow(len(s))
+	for i := 0; i < len(s); i++ {
+		if s[i] != c {
+			b.WriteByte(s[i])
+		}
+	}
+	return b.String()
 }

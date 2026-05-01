@@ -15,25 +15,19 @@ const (
 	lineHTML
 )
 
-// lineResult describes how a single input line maps to HTML.
-type lineResult struct {
-	Kind int
-	HTML string
-}
-
-func (p *Parser) parseLine(line string, s *State) lineResult {
+func (p *Parser) parseLineInto(out *strings.Builder, line string, s *State) int {
 	if len(line) > 0 {
 		if line == "`=" {
 			s.Literal = !s.Literal
-			return lineResult{Kind: lineNil}
+			return lineNil
 		}
 		if !s.Literal {
 			if line[0] == '#' {
-				return lineResult{Kind: lineOmit}
+				return lineOmit
 			}
 			if line[0] == '<' {
 				s.Depth = 0
-				return p.parseLine(line[1:], s)
+				return p.parseLineInto(out, line[1:], s)
 			}
 			if line[0] == '>' {
 				i := 0
@@ -43,7 +37,7 @@ func (p *Parser) parseLine(line string, s *State) lineResult {
 				s.Depth = i
 				headingLine := line[i:]
 				if len(headingLine) == 0 {
-					return lineResult{Kind: lineNil}
+					return lineNil
 				}
 				style := headingStyle(p, i)
 				latched := p.stateToStyle(s)
@@ -67,13 +61,14 @@ func (p *Parser) parseLine(line string, s *State) lineResult {
 						hs.WriteByte(';')
 					}
 					hs.WriteString(`"><div style="`)
-					hs.WriteString(sectionIndentStyle(s))
+					appendSectionIndentStyle(&hs, s)
 					hs.WriteString(`">`)
 					hs.WriteString(inner)
 					hs.WriteString(`</div></div><br>`)
-					return lineResult{Kind: lineHTML, HTML: hs.String()}
+					out.WriteString(hs.String())
+					return lineHTML
 				}
-				return lineResult{Kind: lineNil}
+				return lineNil
 			}
 			if line[0] == '-' {
 				if len(line) == 1 {
@@ -92,13 +87,13 @@ func (p *Parser) parseLine(line string, s *State) lineResult {
 						b.WriteString(bg)
 						b.WriteByte(';')
 					}
-					b.WriteString(sectionIndentStyle(s))
+					appendSectionIndentStyle(&b, s)
 					b.WriteString(`"/>`)
-					return lineResult{Kind: lineHTML, HTML: b.String()}
+					out.WriteString(b.String())
+					return lineHTML
 				}
 				_, firstSize := utf8.DecodeRuneInString(line)
 				r, _ := utf8.DecodeRuneInString(line[firstSize:])
-				repeated := strings.Repeat(string(r), 250)
 				fg := ColorToCSS(s.FGColor)
 				var b strings.Builder
 				b.WriteString(`<div style="white-space:pre;white-space:nowrap;overflow:hidden;width:100%;`)
@@ -114,64 +109,178 @@ func (p *Parser) parseLine(line string, s *State) lineResult {
 						b.WriteByte(';')
 					}
 				}
-				b.WriteString(sectionIndentStyle(s))
+				appendSectionIndentStyle(&b, s)
 				b.WriteString(`">`)
-				b.WriteString(htmlText(repeated))
+				var tmp [utf8.UTFMax]byte
+				n := utf8.EncodeRune(tmp[:], r)
+				rText := string(tmp[:n])
+				for range 250 {
+					appendHTMLText(&b, rText)
+				}
 				b.WriteString(`</div>`)
-				return lineResult{Kind: lineHTML, HTML: b.String()}
+				out.WriteString(b.String())
+				return lineHTML
 			}
+		}
+		if !s.Literal && strings.IndexByte(line, '`') < 0 {
+			text := line
+			if strings.IndexByte(line, '\\') >= 0 {
+				text = unescapePlainText(line)
+			}
+			appendWrappedAlignedLineHTML(out, p.fastPlainInner(text, s), s)
+			return lineHTML
+		}
+		if s.Literal {
+			text := line
+			if line == "\\`=" {
+				text = "`="
+			}
+			appendWrappedAlignedLineHTML(out, p.fastPlainInner(text, s), s)
+			return lineHTML
 		}
 		parts := p.makeOutput(s, line)
 		inner := p.joinLinePartsHTML(parts, s)
-		var b strings.Builder
-		b.WriteString(`<div style="text-align:`)
-		b.WriteString(s.Align)
-		b.WriteString(`;`)
-		b.WriteString(sectionIndentStyle(s))
-		b.WriteString(`">`)
-		b.WriteString(inner)
-		b.WriteString(`</div>`)
-		wrapped := b.String()
-		if s.BGColor != s.DefaultBG && s.BGColor != "default" {
-			bg := ColorToCSS(s.BGColor)
-			if bg != "" {
-				var out strings.Builder
-				out.WriteString(`<div style="background-color:`)
-				out.WriteString(bg)
-				out.WriteString(`;width:100%;display:block;">`)
-				out.WriteString(wrapped)
-				out.WriteString(`</div>`)
-				return lineResult{Kind: lineHTML, HTML: out.String()}
-			}
-		}
-		return lineResult{Kind: lineHTML, HTML: wrapped}
+		appendWrappedAlignedLineHTML(out, inner, s)
+		return lineHTML
 	}
-	br := `<br>`
 	if s.BGColor != s.DefaultBG && s.BGColor != "default" {
 		bg := ColorToCSS(s.BGColor)
 		if bg != "" {
-			var out strings.Builder
-			out.WriteString(`<div style="background-color:`)
-			out.WriteString(bg)
-			out.WriteString(`;width:100%;display:block;height:1.2em;"><div style="`)
-			out.WriteString(strings.TrimSuffix(sectionIndentStyle(s), ";"))
-			out.WriteString(`">`)
-			out.WriteString(br)
-			out.WriteString(`</div></div>`)
-			return lineResult{Kind: lineHTML, HTML: out.String()}
+			var b strings.Builder
+			b.WriteString(`<div style="background-color:`)
+			b.WriteString(bg)
+			b.WriteString(`;width:100%;display:block;height:1.2em;"><div style="`)
+			appendSectionIndentStyleNoSemi(&b, s)
+			b.WriteString(`">`)
+			b.WriteString(`<br>`)
+			b.WriteString(`</div></div>`)
+			out.WriteString(b.String())
+			return lineHTML
 		}
 	}
-	return lineResult{Kind: lineHTML, HTML: br}
+	out.WriteString(`<br>`)
+	return lineHTML
 }
 
-func sectionIndentStyle(s *State) string {
-	ind := max((s.Depth-1)*2, 0)
-	if ind <= 0 {
-		return ""
+func (p *Parser) fastPlainInner(line string, s *State) string {
+	var body strings.Builder
+	if p.ForceMonospace {
+		p.appendSplitAtSpaces(&body, line)
+	} else {
+		appendHTMLText(&body, line)
+	}
+	sa := cachedStateStyleAttr(s)
+	if sa == "" {
+		return body.String()
+	}
+	var out strings.Builder
+	out.WriteString(`<span style="`)
+	out.WriteString(sa)
+	out.WriteString(`">`)
+	out.WriteString(body.String())
+	out.WriteString(`</span>`)
+	return out.String()
+}
+
+func cachedStateStyleAttr(s *State) string {
+	key := stateStyleKey{
+		FG:        s.FGColor,
+		BG:        s.BGColor,
+		Bold:      s.Formatting.Bold,
+		Underline: s.Formatting.Underline,
+		Italic:    s.Formatting.Italic,
+	}
+	if s.styleAttrMap != nil {
+		if v, ok := s.styleAttrMap[key]; ok {
+			return v
+		}
+	} else {
+		s.styleAttrMap = make(map[stateStyleKey]string, 8)
+	}
+	v := styleAttr(Style{
+		FG:        key.FG,
+		BG:        key.BG,
+		Bold:      key.Bold,
+		Underline: key.Underline,
+		Italic:    key.Italic,
+	}, s.DefaultBG)
+	s.styleAttrMap[key] = v
+	return v
+}
+
+func unescapePlainText(line string) string {
+	if strings.IndexByte(line, '\\') < 0 {
+		return line
 	}
 	var b strings.Builder
-	b.WriteString("margin-left:")
-	b.WriteString(strconv.FormatFloat(float64(ind)*0.6, 'f', 1, 64))
-	b.WriteString("em;")
+	b.Grow(len(line))
+	escape := false
+	for i := 0; i < len(line); i++ {
+		c := line[i]
+		if escape {
+			b.WriteByte(c)
+			escape = false
+			continue
+		}
+		if c == '\\' {
+			escape = true
+			continue
+		}
+		b.WriteByte(c)
+	}
 	return b.String()
+}
+
+func appendWrappedAlignedLineHTML(out *strings.Builder, inner string, s *State) {
+	var b strings.Builder
+	b.WriteString(`<div style="text-align:`)
+	b.WriteString(s.Align)
+	b.WriteString(`;`)
+	appendSectionIndentStyle(&b, s)
+	b.WriteString(`">`)
+	b.WriteString(inner)
+	b.WriteString(`</div>`)
+	wrapped := b.String()
+	if s.BGColor != s.DefaultBG && s.BGColor != "default" {
+		bg := ColorToCSS(s.BGColor)
+		if bg != "" {
+			var bgWrap strings.Builder
+			bgWrap.WriteString(`<div style="background-color:`)
+			bgWrap.WriteString(bg)
+			bgWrap.WriteString(`;width:100%;display:block;">`)
+			bgWrap.WriteString(wrapped)
+			bgWrap.WriteString(`</div>`)
+			out.WriteString(bgWrap.String())
+			return
+		}
+	}
+	out.WriteString(wrapped)
+}
+
+func sectionIndentStyleEm(s *State) float64 {
+	ind := max((s.Depth-1)*2, 0)
+	if ind <= 0 {
+		return 0
+	}
+	return float64(ind) * 0.6
+}
+
+func appendSectionIndentStyle(b *strings.Builder, s *State) {
+	em := sectionIndentStyleEm(s)
+	if em <= 0 {
+		return
+	}
+	b.WriteString("margin-left:")
+	b.WriteString(strconv.FormatFloat(em, 'f', 1, 64))
+	b.WriteString("em;")
+}
+
+func appendSectionIndentStyleNoSemi(b *strings.Builder, s *State) {
+	em := sectionIndentStyleEm(s)
+	if em <= 0 {
+		return
+	}
+	b.WriteString("margin-left:")
+	b.WriteString(strconv.FormatFloat(em, 'f', 1, 64))
+	b.WriteString("em")
 }

@@ -32,6 +32,10 @@ func (p *Parser) ConvertMicronToHTML(markup string) string {
 		DefaultBG:    defaultBGVal,
 	}
 	var b strings.Builder
+	if len(markup) > 0 {
+		// HTML expansion varies by content; this reduces re-grows for common docs.
+		b.Grow(len(markup) + len(markup)/2)
+	}
 	for start := 0; start <= len(markup); {
 		nextRel := strings.IndexByte(markup[start:], '\n')
 		line := ""
@@ -43,30 +47,38 @@ func (p *Parser) ConvertMicronToHTML(markup string) string {
 			line = markup[start:next]
 			start = next + 1
 		}
-		r := p.parseLine(line, &s)
-		switch r.Kind {
+		k := p.parseLineInto(&b, line, &s)
+		switch k {
 		case lineOmit:
 			continue
 		case lineNil:
 			b.WriteString("<br>")
-		case lineHTML:
-			b.WriteString(r.HTML)
 		}
 	}
-	out := b.String()
-	wrap := ""
+	var wrap strings.Builder
 	if defaultFG != "" && defaultFG != "default" {
 		if fg := ColorToCSS(defaultFG); fg != "" {
-			wrap += "color:" + fg + ";"
+			wrap.WriteString("color:")
+			wrap.WriteString(fg)
+			wrap.WriteByte(';')
 		}
 	}
 	if defaultBGVal != "" && defaultBGVal != "default" {
 		if bg := ColorToCSS(defaultBGVal); bg != "" {
-			wrap += "background-color:" + bg + ";"
+			wrap.WriteString("background-color:")
+			wrap.WriteString(bg)
+			wrap.WriteByte(';')
 		}
 	}
-	if wrap != "" {
-		return `<div style="` + wrap + `">` + out + `</div>`
+	if wrap.Len() > 0 {
+		var out strings.Builder
+		out.Grow(b.Len() + wrap.Len() + 24)
+		out.WriteString(`<div style="`)
+		out.WriteString(wrap.String())
+		out.WriteString(`">`)
+		out.WriteString(b.String())
+		out.WriteString(`</div>`)
+		return out.String()
 	}
-	return out
+	return b.String()
 }

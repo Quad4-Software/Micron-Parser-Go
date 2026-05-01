@@ -41,6 +41,15 @@ type State struct {
 	Align        string
 	DefaultFG    string
 	DefaultBG    string
+	styleAttrMap map[stateStyleKey]string
+}
+
+type stateStyleKey struct {
+	FG        string
+	BG        string
+	Bold      bool
+	Underline bool
+	Italic    bool
 }
 
 // FieldKind selects the widget produced by a field span.
