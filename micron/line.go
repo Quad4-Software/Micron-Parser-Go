@@ -122,7 +122,7 @@ func (p *Parser) parseLineInto(out *strings.Builder, line string, s *State) int 
 				return lineHTML
 			}
 		}
-		if !s.Literal && strings.IndexByte(line, '`') < 0 {
+		if !p.ForceMonospace && !s.Literal && strings.IndexByte(line, '`') < 0 {
 			text := line
 			if strings.IndexByte(line, '\\') >= 0 {
 				text = unescapePlainText(line)
@@ -130,7 +130,7 @@ func (p *Parser) parseLineInto(out *strings.Builder, line string, s *State) int 
 			appendWrappedAlignedLineHTML(out, p.fastPlainInner(text, s), s)
 			return lineHTML
 		}
-		if s.Literal {
+		if !p.ForceMonospace && s.Literal {
 			text := line
 			if line == "\\`=" {
 				text = "`="
