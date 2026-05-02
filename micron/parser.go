@@ -6,10 +6,10 @@ package micron
 import "strings"
 
 // ConvertMicronToHTML renders Micron markup to a self-contained HTML fragment.
-// Text is escaped; only parser-emitted tags and attributes appear in the output.
-// The caller supplies the full document; optional leading #!fg= / #!bg= lines
-// affect default colors. The returned string is safe to treat as an HTML
-// fragment only together with a sensible host CSP and link handling policy.
+// Text is escaped and ASCII control characters (U+0000–U+001F) are stripped from
+// emitted text and attributes. Only parser-emitted tags and attributes appear in the output.
+// The caller supplies the full document. Optional leading #!fg= / #!bg= lines set default colors.
+// Treat the result as safe HTML only together with a sensible CSP and link handling policy on the host.
 func (p *Parser) ConvertMicronToHTML(markup string) string {
 	pc := ParseHeaderTags(markup)
 	plain := plainStyle(p)
@@ -33,7 +33,7 @@ func (p *Parser) ConvertMicronToHTML(markup string) string {
 	}
 	var b strings.Builder
 	if len(markup) > 0 {
-		// HTML expansion varies by content; this reduces re-grows for common docs.
+		// Output is often larger than input. Pre-grow reduces reallocations for typical docs.
 		b.Grow(len(markup) + len(markup)/2)
 	}
 	for start := 0; start <= len(markup); {

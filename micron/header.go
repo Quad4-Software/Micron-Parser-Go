@@ -13,9 +13,8 @@ type PageColors struct {
 }
 
 // ParseHeaderTags reads leading #!fg= and #!bg= lines at the start of markup,
-// stopping at the first non-directive line. It does not consume those lines
-// from the string passed to ConvertMicronToHTML; conversion applies the same
-// rules internally.
+// stopping at the first non-directive line. Those lines stay in the markup string.
+// ConvertMicronToHTML applies the same rules when rendering.
 func ParseHeaderTags(markup string) PageColors {
 	var out PageColors
 	lines := strings.SplitSeq(markup, "\n")

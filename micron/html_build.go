@@ -222,5 +222,5 @@ func (p *Parser) writePartial(b *strings.Builder, pt *Partial, s *State) {
 }
 
 func htmlAttr(s string) string {
-	return htmlpkg.EscapeString(s)
+	return htmlpkg.EscapeString(stripASCIIControls(s))
 }

@@ -6,22 +6,20 @@
 //
 // # HTML and security
 //
-// ConvertMicronToHTML returns a fragment: user text is escaped; attribute
-// values on generated elements use HTML escaping. The host application still
-// controls how that fragment is mounted (for example innerHTML vs trusted
-// DOM APIs), Content-Security-Policy, and how link destinations and partial
-// fetch URLs are interpreted. Link href and data-* values follow Micron /
-// NomadNet URL rules (see FormatNomadnetworkURL); they are not an arbitrary
-// URL allowlist.
+// ConvertMicronToHTML returns a fragment. User text is escaped and attribute values on
+// generated elements use HTML escaping. The host still decides how to mount that fragment
+// (innerHTML vs safer DOM APIs), CSP, and how link destinations and partial URLs are fetched.
+// Link href and data-* strings follow Micron / NomadNet URL rules (see FormatNomadnetworkURL).
+// That is not a general-purpose URL allowlist for arbitrary schemes.
 //
 // # Concurrency
 //
-// Parser holds only DarkTheme and ForceMonospace. It has no per-conversion
-// mutable state; the same Parser value may be used from multiple goroutines.
+// Parser holds only DarkTheme and ForceMonospace.
+// There is no per-conversion mutable state. The same Parser may be shared across goroutines.
 //
 // # Reference implementation
 //
-// Behavioral parity with the JavaScript reference is validated by tests that
-// compare structural signatures of the HTML output, not byte-identical
-// strings. The reference script used in tests lives under micron/testdata/.
+// Tests check behavioral parity with the JavaScript reference by comparing structural
+// signatures of HTML output rather than byte-identical strings.
+// The reference script lives under micron/testdata/.
 package micron

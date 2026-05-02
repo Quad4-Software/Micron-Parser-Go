@@ -9,7 +9,7 @@ import (
 )
 
 // FieldInput is a normalized HTML control snapshot (type, name, value, checked).
-// Type is matched case-insensitively; "checkbox" and "radio" use Checked.
+// Type names are matched case-insensitively. Checkbox and radio inputs use Checked.
 type FieldInput struct {
 	Type    string
 	Name    string
@@ -26,8 +26,8 @@ type RequestPayload struct {
 }
 
 // CollectFormFields converts HTML input snapshots into a name to value map.
-// Checkboxes with the same name and multiple checked values are joined with
-// commas; the last checked radio wins for a given name.
+// Checkboxes that share a name and are all checked get their values joined with commas.
+// For radios, the last checked input for a given name wins.
 func CollectFormFields(inputs []FieldInput) map[string]string {
 	out := map[string]string{}
 	for _, in := range inputs {
@@ -58,7 +58,7 @@ func CollectFormFields(inputs []FieldInput) map[string]string {
 
 // BuildRequestPayload splits destination on "`" into a base path and optional
 // k=v|… request variables, then selects fields from allFields using fieldsSpec.
-// Use "*" to copy all of allFields into the payload. allFields is not modified.
+// Use "*" to copy every entry from allFields. The map allFields is not modified.
 func BuildRequestPayload(allFields map[string]string, destination, fieldsSpec string) RequestPayload {
 	dest, reqVars := splitDestinationVars(destination)
 	selected := map[string]string{}

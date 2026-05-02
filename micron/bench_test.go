@@ -18,8 +18,8 @@ func BenchmarkConvertMicronToHTML(b *testing.B) {
 	}
 }
 
-// BenchmarkConvertNomadNetGuide uses testdata/nomadnet_guide.mu (same corpus as the web demo seed).
-// Measures native Go (same code as the WASM module). For 10 benchmark runs: go test ./micron -bench=BenchmarkConvertNomadNetGuide -benchmem -count=10
+// BenchmarkConvertNomadNetGuide uses testdata/nomadnet_guide.mu, the same corpus as the web demo seed.
+// It measures native Go (the same code as the WASM build). Example: go test ./micron -bench=BenchmarkConvertNomadNetGuide -benchmem -count=10
 func BenchmarkConvertNomadNetGuide(b *testing.B) {
 	data, err := os.ReadFile(filepath.Join("testdata", "nomadnet_guide.mu"))
 	if err != nil {

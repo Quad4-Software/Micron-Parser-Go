@@ -63,6 +63,7 @@ func (p *Parser) appendSplitAtSpaces(b *strings.Builder, line string) {
 }
 
 func (p *Parser) appendForceMonospace(b *strings.Builder, line string) {
+	line = stripASCIIControls(line)
 	for i := 0; i < len(line); {
 		c := line[i]
 		b.WriteString(`<span class="Mu-mnt">`)

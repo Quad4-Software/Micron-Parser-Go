@@ -33,6 +33,12 @@ func TestFormatNomadnetworkURL(t *testing.T) {
 	if got := FormatNomadnetworkURL("example"); got != "nomadnetwork://example" {
 		t.Fatalf("got %q", got)
 	}
+	if got := FormatNomadnetworkURL("file:///etc/passwd"); got != "nomadnetwork://file:///etc/passwd" {
+		t.Fatalf("got %q", got)
+	}
+	if once := FormatNomadnetworkURL("file:///x"); FormatNomadnetworkURL(once) != once {
+		t.Fatal("wrapped file URL must be idempotent")
+	}
 }
 
 func TestParseHeaderTags(t *testing.T) {
