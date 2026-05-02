@@ -19,7 +19,7 @@ func (p *Parser) parseLineInto(out *strings.Builder, line string, s *State) int 
 	if len(line) > 0 {
 		if line == "`=" {
 			s.Literal = !s.Literal
-			return lineNil
+			return lineOmit
 		}
 		if !s.Literal {
 			if line[0] == '#' {
@@ -37,7 +37,7 @@ func (p *Parser) parseLineInto(out *strings.Builder, line string, s *State) int 
 				s.Depth = i
 				headingLine := line[i:]
 				if len(headingLine) == 0 {
-					return lineNil
+					return lineOmit
 				}
 				style := headingStyle(p, i)
 				latched := p.stateToStyle(s)
