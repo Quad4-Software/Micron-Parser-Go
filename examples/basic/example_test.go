@@ -28,7 +28,7 @@ func ExampleParser_ConvertMicronToHTML() {
 	p := micron.Parser{DarkTheme: true, ForceMonospace: false}
 	fmt.Print(p.ConvertMicronToHTML("hello"))
 	// Output:
-	// <div style="color:#ddd;"><div style="text-align:left;"><span style="color:#ddd;">hello</span></div></div>
+	// <div style="line-height:1.5;color:#ddd;"><div style="text-align:left;"><span style="color:#ddd;">hello</span></div></div>
 }
 
 func ExampleCollectFormFields() {
