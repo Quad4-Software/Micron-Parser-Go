@@ -10,29 +10,33 @@ import (
 )
 
 func appendQuotedHTMLStyleAttr(b *strings.Builder, st Style, defaultBG string) bool {
-	var tmp strings.Builder
-	tmp.Grow(96)
-	appendStyleAttr(&tmp, st, defaultBG)
-	if tmp.Len() == 0 {
+	if !hasAnyStyle(st, defaultBG) {
 		return false
 	}
 	b.WriteString(` style="`)
-	b.WriteString(tmp.String())
+	appendStyleAttr(b, st, defaultBG)
 	b.WriteByte('"')
 	return true
 }
 
 func appendStyledSpanOpen(b *strings.Builder, st Style, defaultBG string) bool {
-	var tmp strings.Builder
-	tmp.Grow(96)
-	appendStyleAttr(&tmp, st, defaultBG)
-	if tmp.Len() == 0 {
+	if !hasAnyStyle(st, defaultBG) {
 		return false
 	}
 	b.WriteString(`<span style="`)
-	b.WriteString(tmp.String())
+	appendStyleAttr(b, st, defaultBG)
 	b.WriteString(`">`)
 	return true
+}
+
+func hasAnyStyle(st Style, defaultBG string) bool {
+	if micronColorToken(st.FG) {
+		return true
+	}
+	if st.BG != defaultBG && st.BG != "default" && micronColorToken(st.BG) {
+		return true
+	}
+	return st.Bold || st.Underline || st.Italic
 }
 
 func (p *Parser) appendOutput(b *strings.Builder, parts []linePart, s *State) {
