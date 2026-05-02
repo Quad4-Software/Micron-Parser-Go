@@ -55,23 +55,17 @@ func (p *Parser) ConvertMicronToHTML(markup string) string {
 			b.WriteString("<br>")
 		}
 	}
-	var wrap strings.Builder
-	wrap.Grow(64)
-	if defaultFG != "" && defaultFG != "default" && tryAppendColorProperty(&wrap, "color:", defaultFG) {
-		wrap.WriteByte(';')
+	var out strings.Builder
+	out.Grow(b.Len() + 128)
+	out.WriteString(`<div style="line-height:1.5;`)
+	if defaultFG != "" && defaultFG != "default" && tryAppendColorProperty(&out, "color:", defaultFG) {
+		out.WriteByte(';')
 	}
-	if defaultBGVal != "" && defaultBGVal != "default" && tryAppendColorProperty(&wrap, "background-color:", defaultBGVal) {
-		wrap.WriteByte(';')
+	if defaultBGVal != "" && defaultBGVal != "default" && tryAppendColorProperty(&out, "background-color:", defaultBGVal) {
+		out.WriteByte(';')
 	}
-	if wrap.Len() > 0 {
-		var out strings.Builder
-		out.Grow(b.Len() + wrap.Len() + 24)
-		out.WriteString(`<div style="`)
-		out.WriteString(wrap.String())
-		out.WriteString(`">`)
-		out.WriteString(b.String())
-		out.WriteString(`</div>`)
-		return out.String()
-	}
-	return b.String()
+	out.WriteString(`">`)
+	out.WriteString(b.String())
+	out.WriteString(`</div>`)
+	return out.String()
 }
