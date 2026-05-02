@@ -188,6 +188,9 @@ func cachedStateStyleAttr(s *State) string {
 }
 
 func appendWrappedAlignedLineHTML(out *strings.Builder, inner string, s *State) {
+	if inner == "" {
+		return
+	}
 	var b strings.Builder
 	b.WriteString(`<div style="text-align:`)
 	b.WriteString(s.Align)

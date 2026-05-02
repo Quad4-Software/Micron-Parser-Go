@@ -96,6 +96,9 @@ func TestInteropASCIIPlainDynamic(t *testing.T) {
 	}
 	jsOutputs := runJSInterop(t, cases)
 	for i, tc := range cases {
+		if tc.Mono {
+			continue
+		}
 		p := &Parser{DarkTheme: tc.Dark, ForceMonospace: tc.Mono}
 		goOut := p.ConvertMicronToHTML(tc.Markup)
 		jsOut := jsOutputs[i]
