@@ -1155,6 +1155,74 @@ Below is the source code of this entire document, presented as a literal block.
     }
   });
 
+  function upgradeInputToTextarea(input, rows) {
+    if (!input || input.tagName !== "INPUT") return input;
+    const owner = input.ownerDocument || document;
+    const ta = owner.createElement("textarea");
+    ta.name = input.name;
+    ta.value = input.value || "";
+    ta.rows = rows && rows > 1 ? rows : 4;
+    if (input.placeholder) ta.placeholder = input.placeholder;
+    if (input.disabled) ta.disabled = true;
+    if (input.readOnly) ta.readOnly = true;
+    if (input.required) ta.required = true;
+    if (input.style && input.style.cssText) ta.style.cssText = input.style.cssText;
+    if (input.className) ta.className = input.className;
+    const skip = new Set(["type", "value", "name", "rows", "cols", "wrap"]);
+    for (const attr of Array.from(input.attributes || [])) {
+      if (!skip.has(attr.name)) ta.setAttribute(attr.name, attr.value);
+    }
+    ta.setAttribute("data-micron-multiline", "1");
+    input.replaceWith(ta);
+    return ta;
+  }
+
+  function enableDoubleEnterMultiline(root, opts) {
+    if (!root || typeof root.addEventListener !== "function") return;
+    const windowMs = (opts && typeof opts.windowMs === "number") ? opts.windowMs : 500;
+    const rows = (opts && typeof opts.rows === "number") ? opts.rows : 4;
+    const lastEnter = new WeakMap();
+    const armTimers = new WeakMap();
+    const disarm = (el) => {
+      lastEnter.delete(el);
+      const t = armTimers.get(el);
+      if (t) { clearTimeout(t); armTimers.delete(el); }
+    };
+    root.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter" || e.isComposing) return;
+      if (e.shiftKey || e.ctrlKey || e.metaKey || e.altKey) return;
+      const el = e.target;
+      if (!el || el.tagName !== "INPUT") return;
+      const t = (el.type || "text").toLowerCase();
+      if (t !== "text" && t !== "") return;
+      const now = Date.now();
+      const prev = lastEnter.get(el) || 0;
+      if (prev > 0 && (now - prev) <= windowMs) {
+        e.preventDefault();
+        disarm(el);
+        const cursor = (typeof el.selectionStart === "number") ? el.selectionStart : el.value.length;
+        const ta = upgradeInputToTextarea(el, rows);
+        const before = (ta.value || "").slice(0, cursor);
+        const after = (ta.value || "").slice(cursor);
+        ta.value = before + "\n" + after;
+        try {
+          ta.focus();
+          if (typeof ta.setSelectionRange === "function") {
+            ta.setSelectionRange(before.length + 1, before.length + 1);
+          }
+        } catch (_) {}
+        return;
+      }
+      e.preventDefault();
+      lastEnter.set(el, now);
+      const tid = setTimeout(() => disarm(el), windowMs + 16);
+      armTimers.set(el, tid);
+    });
+    root.addEventListener("blur", (e) => {
+      if (e.target && e.target.tagName === "INPUT") disarm(e.target);
+    }, true);
+  }
+
   function sanitizeFileBase(name) {
     let s = String(name || "untitled").trim() || "untitled";
     s = s.replace(/[\\/:*?"<>|]+/g, "-").replace(/\s+/g, " ").trim();
@@ -1337,6 +1405,7 @@ Below is the source code of this entire document, presented as a literal block.
         setStatus("WASM failed", true);
         return;
       }
+      enableDoubleEnterMultiline(preview);
       renderPreview();
     })
     .catch(() => {
