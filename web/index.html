@@ -494,6 +494,8 @@ We shall soon see `!bold`! paragraphs of text decorated with `_underlines`_ and 
 
 To create sections and subsections, use the > tag. This tag must be placed at the beginning of a line. To specify a sub-section of any level, use any number of > tags. If text is placed after a > tag, it will be used as a heading.
 
+A line that contains only <code>></code> characters, with no title text (extra spaces after the <code>></code> run still count as "no title"), only updates the depth used to indent what follows. It does not create an empty heading row in the preview.
+
 Here is an example of sections:
 
 `Faaa
@@ -528,6 +530,19 @@ A sub sub section. We could continue, but you get the point.
 Wait! It's worth noting that we can also create sections without headings. They look like this.
 ``
 
+
+For longer pages, a bare subsection line (only \`\>>\` and optional spaces) indents the following block without an extra empty heading in the preview—useful for multi-line layouts (links, toolbars) under a title.
+
+`Faaa
+`=
+>Portal
+
+>>
+`[Node`:/page/index.mu] / more content on the same depth
+
+<
+`=
+``
 
 >Colors
 
@@ -709,6 +724,76 @@ In this example, when the data is submitted, `B444` field_color`b will be set to
 
 ``
 
+>Headings with fields
+
+If a line begins with one or more > section markers but also contains a field tag (the sequence \`<...\`>), the heading markers are stripped so the field renders without an extra heading row above it.
+
+`Faaa
+`=
+>>`B444`<24|demo_user`Ada Lovelace>`b
+`=
+``
+
+Produces (leading > markers omitted because the line contains a field):
+
+`Faaa`B333
+
+`B444`<24|demo_user`Ada Lovelace>`b
+
+
+>>True-color (FT / BT)
+
+Six-digit RGB uses \`FT or \`BT followed by six hex digits. The renderer also accepts an interleaved packed form where six nibbles are split around marker bytes (output by some terminal sources). Either form sets the corresponding foreground or background color.
+
+`Faaa
+`=
+`FTaabbccTruecolor foreground`f `BT334455truecolor background`b
+Packed example: `F123`F456hello world``
+`=
+``
+
+Produces:
+
+`Faaa`B333
+
+`FTaabbccTruecolor foreground`f `BT334455truecolor background`b
+Packed example: `F123`F456hello world``
+
+
+>Partials (embedded fragments)
+
+A line that starts with \`{ declares an embedded fragment. Close it with }. Inside, separated by \`, you can give a destination URL, an optional refresh interval in seconds (must be at least 1), and an optional |-separated list of extra fields. Use pid=NAME inside the fields for a stable identity across refreshes. The renderer emits a placeholder div with class Mu-partial and data-partial-* attributes; the host script (or NomadNet client) is responsible for fetching the destination and replacing the placeholder.
+
+The playground in this page only fetches HTTP-style URLs, so the source below is shown as-is rather than rendered, but the markup demonstrates the three accepted shapes:
+
+`Faaa
+`=
+`{72914442a3689add83a09a767963f57c:/page/sidebar.mu}
+`{72914442a3689add83a09a767963f57c:/page/news.mu`30}
+`{72914442a3689add83a09a767963f57c:/page/panel.mu`120`pid=sidebar|theme=dark}
+`=
+``
+
+
+>>Line-leading backslash
+
+When the first character of a line is a backslash, it is dropped and the rest of the line is parsed with the next character treated as already-escaped (NomadNet / micron-parser-js parity). Use this when column one must be a literal backtick, > or # rather than a heading or comment.
+
+`Faaa
+`=
+\> This line does not start a heading.
+\# This is not a comment line.
+`=
+``
+
+Produces:
+
+`Faaa`B333
+
+\> This line does not start a heading.
+\# This is not a comment line.
+
+
 >Comments
 
 You can insert comments that will not be displayed in the output by starting a line with the # character.
@@ -734,7 +819,11 @@ This line will
 
 >Literals
 
-To display literal content, for example source-code, or blocks of text that should not be interpreted by micron, you can use literal blocks, specified by the \`= tag. Below is the source code of this entire document, presented as a literal block.
+To display literal content, for example source-code, or blocks of text that should not be interpreted by micron, you can use literal blocks, specified by the \`= tag. ASCII art and FIGlet-style banners contain many characters that micron treats specially (for example backticks, underscores, and vertical bars). Put those blocks inside a literal section so each character is shown exactly and monospace alignment is preserved in the preview.
+
+A toggle line may include leading or trailing spaces (the whole line is still recognized as a toggle if it is only \`= and whitespace). Toggles do not add blank rows; only the lines between the toggles are rendered as literal text.
+
+Below is the source code of this entire document, presented as a literal block.
 
 -
 
