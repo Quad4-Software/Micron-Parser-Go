@@ -20,6 +20,8 @@ import "git.quad4.io/Go-Libs/micron-parser-go/micron"
 
 `micron.Parser` holds only two settings: **`DarkTheme`** picks light or dark default colors for the HTML output, and **`ForceMonospace`** toggles monospace styling for the rendered page. The type has no mutable conversion state; a single `Parser` value is safe to reuse from multiple goroutines.
 
+Lines that contain only `>` section markers and optional spaces set the depth for following lines but do not render an empty heading block. Literal mode toggles on a line whose trimmed content is exactly `` `= `` (so padded toggle lines match NomadNet). Multi-line documents are handled line by line in document order.
+
 ### Convert Micron to HTML
 
 `ConvertMicronToHTML` parses the full document, applies optional leading `#!fg=` / `#!bg=` header lines (see below), and returns a self-contained HTML fragment safe for insertion into a host page (escaping is applied consistently with the reference implementation).
@@ -92,14 +94,13 @@ Benchmarks use the **NomadNet guide** micron source from Micron-Parser-JS (`1124
 
 | Implementation | Environment | Mean time / conversion | Notes |
 |----------------|---------------|------------------------|--------|
-| This package (Go) | `go test` native amd64 | ~0.95 ms | 10× `BenchmarkConvertNomadNetGuide` runs (pinned); ~0.94–0.98 ms/op, ~4.31 MB/op, ~3476 allocs/op |
-| This package (Go WASM) | Browser `bench.html` | ~2.68 ms | 10 measured runs (64 inner iterations); stdev ~0.04 ms; min/max ~2.63–2.78 ms; ~4.0 MiB/s |
-| Reference [micron-parser-js](https://github.com/RFnexus/micron-parser-js) | Browser `bench.html` | ~39.1 ms | 10 measured runs (8 inner iterations); stdev ~1.4 ms; min/max ~35.0–41.8 ms; ~0.28 MiB/s |
-| Reference [micron-parser-js](https://github.com/RFnexus/micron-parser-js) | Node + DOM stub | ~21.0 ms | 10 measured runs; ~19.7–25.9 ms; ~0.51 MiB/s mean throughput |
+| This package (Go) | `go test` native amd64 | ~0.86 ms | 10x `BenchmarkConvertNomadNetGuide` runs (pinned); ~0.82-0.91 ms/op, ~2.08 MB/op, 538 allocs/op |
+| This package (Go WASM) | Browser `bench.html` | ~1.68 ms | 10 runs (128 inner iterations); stdev ~0.025 ms; min/max ~1.65-1.72 ms; ~6.4 MiB/s |
+| Reference [micron-parser-js](https://github.com/RFnexus/micron-parser-js) | Browser `bench.html` | ~2.63 ms | 10 runs (64 inner iterations); stdev ~0.056 ms; min/max ~2.57-2.77 ms; ~4.1 MiB/s |
 
 **WebAssembly:** The browser build uses the same Go code as the native benchmark, but timing includes JS/WASM call overhead and is strongly browser-dependent. It will not match the `go test` numbers above.
 
-**WASM vs reference JS (browser mean):** `14.6x` faster.
+**WASM vs reference JS (browser mean):** `1.57x` faster.
 
 **Reproduce**
 
