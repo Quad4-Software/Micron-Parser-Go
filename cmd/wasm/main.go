@@ -72,13 +72,17 @@ func collectInputs(rootSelector string) []micron.FieldInput {
 			root = el
 		}
 	}
-	nodes := root.Call("querySelectorAll", "input[name]")
+	nodes := root.Call("querySelectorAll", "input[name],textarea[name]")
 	n := nodes.Get("length").Int()
 	out := make([]micron.FieldInput, 0, n)
 	for i := 0; i < n; i++ {
 		el := nodes.Index(i)
+		typ := strings.ToLower(el.Get("type").String())
+		if strings.EqualFold(el.Get("tagName").String(), "TEXTAREA") {
+			typ = "text"
+		}
 		out = append(out, micron.FieldInput{
-			Type:    strings.ToLower(el.Get("type").String()),
+			Type:    typ,
 			Name:    el.Get("name").String(),
 			Value:   el.Get("value").String(),
 			Checked: el.Get("checked").Bool(),
