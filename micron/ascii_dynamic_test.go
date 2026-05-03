@@ -46,8 +46,9 @@ func TestPlainLinePreservesBackslashesFiglet(t *testing.T) {
 	}
 	row := `\_______/`
 	out2 := p.ConvertMicronToHTML(row)
-	if countMuMnt(out2) != utf8.RuneCountInString(row) {
-		t.Fatalf("Mu-mnt count mismatch for %q", row)
+	afterLeadEscape := row[1:]
+	if countMuMnt(out2) != utf8.RuneCountInString(afterLeadEscape) {
+		t.Fatalf("Mu-mnt count mismatch for %q (content after line-leading \\)", row)
 	}
 }
 

@@ -65,6 +65,30 @@ func TestLiteralToggleNoExtraLine(t *testing.T) {
 	}
 }
 
+func TestLiteralToggleTrimmedWhitespace(t *testing.T) {
+	p := Parser{DarkTheme: true, ForceMonospace: false}
+	in := "  `=   \npreserve\n  `=  "
+	out := p.ConvertMicronToHTML(in)
+	if strings.Count(out, "<br>") != 0 {
+		t.Fatalf("trimmed toggle lines must not emit blank rows: %s", out)
+	}
+	if !strings.Contains(out, "preserve") {
+		t.Fatal(out)
+	}
+}
+
+func TestBareHeadingOnlySpaces(t *testing.T) {
+	p := Parser{DarkTheme: true, ForceMonospace: false}
+	in := ">>   \nnext"
+	out := p.ConvertMicronToHTML(in)
+	if !strings.Contains(out, "next") || !strings.Contains(out, "margin-left:1.2em") {
+		t.Fatal(out)
+	}
+	if strings.Contains(out, `display:inline-block;width:100%`) {
+		t.Fatal("whitespace-only heading must not emit heading block", out)
+	}
+}
+
 func TestBareHeadingSetsSectionIndent(t *testing.T) {
 	p := Parser{DarkTheme: true, ForceMonospace: false}
 	in := ">>>\nindented content"

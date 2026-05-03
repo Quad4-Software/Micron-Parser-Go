@@ -7,18 +7,6 @@ import (
 	"strings"
 )
 
-func startsMicronFormattingDirective(line string, pos int) bool {
-	if pos >= len(line) {
-		return false
-	}
-	switch line[pos] {
-	case '!', '*', '_', 'F', 'f', 'B', 'b', 'c', 'l', 'r', 'a', '[', '<', '{':
-		return true
-	default:
-		return line[pos] >= '0' && line[pos] <= '9'
-	}
-}
-
 func backslashEscapesOnlyMicronSpecial(line string, pos int) bool {
 	if pos >= len(line) {
 		return false
@@ -31,7 +19,7 @@ func backslashEscapesOnlyMicronSpecial(line string, pos int) bool {
 	}
 }
 
-func (p *Parser) makeOutput(s *State, line string) []linePart {
+func (p *Parser) makeOutput(s *State, line string, preEscape bool) []linePart {
 	if s.Literal {
 		if line == "\\`=" {
 			line = "`="
@@ -40,7 +28,7 @@ func (p *Parser) makeOutput(s *State, line string) []linePart {
 		return []linePart{{style: st, text: line}}
 	}
 
-	if strings.IndexByte(line, '`') < 0 {
+	if strings.IndexByte(line, '`') < 0 && !preEscape {
 		st := p.stateToStyle(s)
 		return []linePart{{style: st, text: line}}
 	}
@@ -48,7 +36,7 @@ func (p *Parser) makeOutput(s *State, line string) []linePart {
 	out := make([]linePart, 0, 8)
 	var part strings.Builder
 	modeText := true
-	escape := false
+	escape := preEscape
 	skip := 0
 	i := 0
 
@@ -81,6 +69,16 @@ func (p *Parser) makeOutput(s *State, line string) []linePart {
 				if i+1 < len(line) && line[i+1] == 'T' && len(line) >= i+8 {
 					s.FGColor = line[i+2 : i+8]
 					skip = 7
+				} else if len(line) >= i+9 && line[i+4] == '`' && line[i+5] == 'F' {
+					var b [6]byte
+					b[0] = line[i+6]
+					b[1] = line[i+1]
+					b[2] = line[i+7]
+					b[3] = line[i+2]
+					b[4] = line[i+8]
+					b[5] = line[i+3]
+					s.FGColor = string(b[:])
+					skip = 8
 				} else if len(line) >= i+4 {
 					s.FGColor = line[i+1 : i+4]
 					skip = 3
@@ -91,6 +89,17 @@ func (p *Parser) makeOutput(s *State, line string) []linePart {
 				if i+1 < len(line) && line[i+1] == 'T' && len(line) >= i+8 {
 					s.BGColor = line[i+2 : i+8]
 					skip = 7
+					flushPart()
+				} else if len(line) >= i+9 && line[i+4] == '`' && line[i+5] == 'B' {
+					var b [6]byte
+					b[0] = line[i+6]
+					b[1] = line[i+1]
+					b[2] = line[i+7]
+					b[3] = line[i+2]
+					b[4] = line[i+8]
+					b[5] = line[i+3]
+					s.BGColor = string(b[:])
+					skip = 8
 					flushPart()
 				} else if len(line) >= i+4 {
 					s.BGColor = line[i+1 : i+4]
@@ -132,14 +141,6 @@ func (p *Parser) makeOutput(s *State, line string) []linePart {
 					modeText = true
 					continue
 				}
-			case '{':
-				flushPart()
-				if sk, pt := p.parsePartial(line, i, s); pt != nil {
-					out = append(out, linePart{partial: pt})
-					i += sk
-					modeText = true
-					continue
-				}
 			}
 			modeText = true
 			i++
@@ -175,11 +176,6 @@ func (p *Parser) makeOutput(s *State, line string) []linePart {
 				i += 2
 				continue
 			}
-			if !startsMicronFormattingDirective(line, i+1) {
-				part.WriteByte('`')
-				i++
-				continue
-			}
 			flushPart()
 			modeText = false
 			i++
@@ -190,10 +186,4 @@ func (p *Parser) makeOutput(s *State, line string) []linePart {
 	}
 	flushPart()
 	return out
-}
-
-func (p *Parser) joinLinePartsHTML(parts []linePart, s *State) string {
-	var b strings.Builder
-	p.appendOutput(&b, parts, s)
-	return b.String()
 }

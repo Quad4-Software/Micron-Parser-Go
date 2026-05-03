@@ -10,105 +10,156 @@ import (
 )
 
 const (
-	lineNil = iota
-	lineOmit
+	lineOmit = iota
 	lineHTML
 )
 
+// isLiteralToggleLine reports whether the line is exactly a "`=" toggle
+// surrounded only by ASCII whitespace, without allocating. Matches
+// micron-parser-js / NomadNet "line.trim() === '`='" without a TrimSpace
+// substring scan past the toggle.
+func isLiteralToggleLine(line string) bool {
+	i := 0
+	for i < len(line) && (line[i] == ' ' || line[i] == '\t' || line[i] == '\r') {
+		i++
+	}
+	if i+2 > len(line) || line[i] != '`' || line[i+1] != '=' {
+		return false
+	}
+	j := i + 2
+	for j < len(line) {
+		c := line[j]
+		if c != ' ' && c != '\t' && c != '\r' {
+			return false
+		}
+		j++
+	}
+	return true
+}
+
+// trimASCIISpaces trims ASCII spaces, tabs, and \r from both ends of s. It is
+// a fast-path for the common case of micron lines that only carry ASCII
+// whitespace; sufficient because input is already split on \n.
+func trimASCIISpaces(s string) string {
+	i := 0
+	for i < len(s) && (s[i] == ' ' || s[i] == '\t' || s[i] == '\r') {
+		i++
+	}
+	j := len(s)
+	for j > i && (s[j-1] == ' ' || s[j-1] == '\t' || s[j-1] == '\r') {
+		j--
+	}
+	return s[i:j]
+}
+
 func (p *Parser) parseLineInto(out *strings.Builder, line string, s *State) int {
 	if len(line) > 0 {
-		if line == "`=" {
+		if isLiteralToggleLine(line) {
 			s.Literal = !s.Literal
 			return lineOmit
 		}
+		preEscape := false
 		if !s.Literal {
-			if line[0] == '#' {
+			if line[0] == '>' && strings.Contains(line, "`<") {
+				k := 0
+				for k < len(line) && line[k] == '>' {
+					k++
+				}
+				line = line[k:]
+				if len(line) == 0 {
+					return p.parseLineInto(out, "", s)
+				}
+			}
+			if line[0] == '\\' {
+				line = line[1:]
+				preEscape = true
+			} else if line[0] == '#' {
 				return lineOmit
-			}
-			if line[0] == '<' {
+			} else if len(line) >= 2 && line[0] == '`' && line[1] == '{' {
+				pt := p.parsePartialFromInner(line[2:], s)
+				if pt == nil {
+					return lineOmit
+				}
+				p.writePartial(out, pt, s)
+				return lineHTML
+			} else if line[0] == '<' {
 				s.Depth = 0
+				if len(line) == 1 {
+					return lineOmit
+				}
 				return p.parseLineInto(out, line[1:], s)
-			}
-			if line[0] == '>' {
+			} else if line[0] == '>' {
 				i := 0
 				for i < len(line) && line[i] == '>' {
 					i++
 				}
 				s.Depth = i
-				headingLine := line[i:]
-				if len(headingLine) == 0 {
+				headingLine := trimASCIISpaces(line[i:])
+				if headingLine == "" {
 					return lineOmit
 				}
 				style := headingStyle(p, i)
 				latched := p.stateToStyle(s)
 				p.styleToState(style, s)
-				parts := p.makeOutput(s, headingLine)
+				parts := p.makeOutput(s, headingLine, false)
 				p.styleToState(latched, s)
-				inner := p.joinLinePartsHTML(parts, s)
-				if inner != "" {
-					var hs strings.Builder
-					hs.WriteString(`<div style="display:inline-block;width:100%;`)
-					if tryAppendColorProperty(&hs, "color:", style.FG) {
-						hs.WriteByte(';')
-					}
-					if tryAppendColorProperty(&hs, "background-color:", style.BG) {
-						hs.WriteByte(';')
-					}
-					hs.WriteString(`"><div style="`)
-					appendSectionIndentStyle(&hs, s)
-					hs.WriteString(`">`)
-					hs.WriteString(inner)
-					hs.WriteString(`</div></div><br>`)
-					out.WriteString(hs.String())
-					return lineHTML
+				if !partsHaveContent(parts) {
+					p.styleToState(latched, s)
+					return lineOmit
 				}
-				return lineNil
-			}
-			if line[0] == '-' {
+				out.WriteString(`<div style="display:inline-block;width:100%;`)
+				if tryAppendColorProperty(out, "color:", style.FG) {
+					out.WriteByte(';')
+				}
+				if tryAppendColorProperty(out, "background-color:", style.BG) {
+					out.WriteByte(';')
+				}
+				out.WriteString(`"><div style="`)
+				appendSectionIndentStyle(out, s)
+				out.WriteString(`">`)
+				p.appendOutput(out, parts, s)
+				out.WriteString(`</div></div><br>`)
+				return lineHTML
+			} else if line[0] == '-' {
 				if len(line) == 1 {
-					var b strings.Builder
-					b.WriteString(`<hr style="all:revert;`)
-					if tryAppendColorProperty(&b, "border-color:", s.FGColor) {
-						b.WriteByte(';')
+					out.WriteString(`<hr style="all:revert;`)
+					if tryAppendColorProperty(out, "border-color:", s.FGColor) {
+						out.WriteByte(';')
 					}
-					b.WriteString(`margin:0.5em 0.5em 0.5em 0.5em;`)
+					out.WriteString(`margin:0.5em 0 0.5em 0;`)
 					if micronColorToken(s.BGColor) {
-						b.WriteString(`box-shadow:0 0 0 0.5em `)
-						writeMicronColorHex(&b, s.BGColor)
-						b.WriteByte(';')
+						out.WriteString(`box-shadow:0 0 0 0.5em `)
+						writeMicronColorHex(out, s.BGColor)
+						out.WriteByte(';')
 					}
-					appendSectionIndentStyle(&b, s)
-					b.WriteString(`"/>`)
-					out.WriteString(b.String())
+					appendSectionIndentStyle(out, s)
+					out.WriteString(`"/>`)
 					return lineHTML
 				}
 				_, firstSize := utf8.DecodeRuneInString(line)
 				r, _ := utf8.DecodeRuneInString(line[firstSize:])
-				var b strings.Builder
-				b.WriteString(`<div style="white-space:pre;white-space:nowrap;overflow:hidden;width:100%;`)
-				if tryAppendColorProperty(&b, "color:", s.FGColor) {
-					b.WriteByte(';')
+				out.WriteString(`<div style="white-space:pre;white-space:nowrap;overflow:hidden;width:100%;`)
+				if tryAppendColorProperty(out, "color:", s.FGColor) {
+					out.WriteByte(';')
 				}
-				if s.BGColor != s.DefaultBG && s.BGColor != "default" && tryAppendColorProperty(&b, "background-color:", s.BGColor) {
-					b.WriteByte(';')
+				if s.BGColor != s.DefaultBG && s.BGColor != "default" && tryAppendColorProperty(out, "background-color:", s.BGColor) {
+					out.WriteByte(';')
 				}
-				appendSectionIndentStyle(&b, s)
-				b.WriteString(`">`)
+				appendSectionIndentStyle(out, s)
+				out.WriteString(`">`)
 				var tmp [utf8.UTFMax]byte
 				n := utf8.EncodeRune(tmp[:], r)
 				rText := string(tmp[:n])
 				for range 250 {
-					appendHTMLText(&b, rText)
+					appendHTMLText(out, rText)
 				}
-				b.WriteString(`</div>`)
-				out.WriteString(b.String())
+				out.WriteString(`</div>`)
 				return lineHTML
 			}
 		}
-		if !s.Literal && strings.IndexByte(line, '`') < 0 {
-			parts := p.makeOutput(s, line)
-			inner := p.joinLinePartsHTML(parts, s)
-			appendWrappedAlignedLineHTML(out, inner, s)
+		if !s.Literal && strings.IndexByte(line, '`') < 0 && !preEscape {
+			parts := p.makeOutput(s, line, false)
+			p.appendWrappedAlignedParts(out, parts, s)
 			return lineHTML
 		}
 		if !p.ForceMonospace && s.Literal {
@@ -116,49 +167,93 @@ func (p *Parser) parseLineInto(out *strings.Builder, line string, s *State) int 
 			if line == "\\`=" {
 				text = "`="
 			}
-			appendWrappedAlignedLineHTML(out, p.fastPlainInner(text, s), s)
+			p.appendWrappedAlignedFastPlain(out, text, s)
 			return lineHTML
 		}
-		parts := p.makeOutput(s, line)
-		inner := p.joinLinePartsHTML(parts, s)
-		appendWrappedAlignedLineHTML(out, inner, s)
+		parts := p.makeOutput(s, line, preEscape)
+		p.appendWrappedAlignedParts(out, parts, s)
 		return lineHTML
 	}
-	if s.BGColor != s.DefaultBG && s.BGColor != "default" {
-		var b strings.Builder
-		b.WriteString(`<div style="`)
-		if tryAppendColorProperty(&b, "background-color:", s.BGColor) {
-			b.WriteString(`;width:100%;display:block;height:1.2em;"><div style="`)
-			appendSectionIndentStyleNoSemi(&b, s)
-			b.WriteString(`">`)
-			b.WriteString(`<br>`)
-			b.WriteString(`</div></div>`)
-			out.WriteString(b.String())
-			return lineHTML
-		}
+	if s.BGColor != s.DefaultBG && s.BGColor != "default" && micronColorToken(s.BGColor) {
+		out.WriteString(`<div style="background-color:`)
+		writeMicronColorHex(out, s.BGColor)
+		out.WriteString(`;width:100%;display:block;height:1.2em;"><div style="`)
+		appendSectionIndentStyleNoSemi(out, s)
+		out.WriteString(`"><br></div></div>`)
+		return lineHTML
 	}
 	out.WriteString(`<br>`)
 	return lineHTML
 }
 
-func (p *Parser) fastPlainInner(line string, s *State) string {
-	var body strings.Builder
-	if p.ForceMonospace {
-		p.appendSplitAtSpaces(&body, line)
-	} else {
-		appendHTMLText(&body, line)
+// partsHaveContent reports whether any element in parts will produce visible
+// HTML output. Used to skip empty wrapper divs without round-tripping through
+// an intermediate strings.Builder.
+func partsHaveContent(parts []linePart) bool {
+	for i := range parts {
+		pr := &parts[i]
+		if pr.field != nil || pr.link != nil || pr.partial != nil {
+			return true
+		}
+		if pr.html != "" || pr.text != "" {
+			return true
+		}
 	}
-	sa := cachedStateStyleAttr(s)
-	if sa == "" {
-		return body.String()
+	return false
+}
+
+func (p *Parser) appendWrappedAlignedParts(out *strings.Builder, parts []linePart, s *State) {
+	if !partsHaveContent(parts) {
+		return
 	}
-	var out strings.Builder
-	out.WriteString(`<span style="`)
-	out.WriteString(sa)
+	bg := s.BGColor != s.DefaultBG && s.BGColor != "default" && micronColorToken(s.BGColor)
+	if bg {
+		out.WriteString(`<div style="background-color:`)
+		writeMicronColorHex(out, s.BGColor)
+		out.WriteString(`;width:100%;display:block;">`)
+	}
+	out.WriteString(`<div style="text-align:`)
+	out.WriteString(s.Align)
+	out.WriteString(`;`)
+	appendSectionIndentStyle(out, s)
 	out.WriteString(`">`)
-	out.WriteString(body.String())
-	out.WriteString(`</span>`)
-	return out.String()
+	p.appendOutput(out, parts, s)
+	out.WriteString(`</div>`)
+	if bg {
+		out.WriteString(`</div>`)
+	}
+}
+
+func (p *Parser) appendWrappedAlignedFastPlain(out *strings.Builder, line string, s *State) {
+	bg := s.BGColor != s.DefaultBG && s.BGColor != "default" && micronColorToken(s.BGColor)
+	if bg {
+		out.WriteString(`<div style="background-color:`)
+		writeMicronColorHex(out, s.BGColor)
+		out.WriteString(`;width:100%;display:block;">`)
+	}
+	out.WriteString(`<div style="text-align:`)
+	out.WriteString(s.Align)
+	out.WriteString(`;`)
+	appendSectionIndentStyle(out, s)
+	out.WriteString(`">`)
+	sa := cachedStateStyleAttr(s)
+	if sa != "" {
+		out.WriteString(`<span style="`)
+		out.WriteString(sa)
+		out.WriteString(`">`)
+	}
+	if p.ForceMonospace {
+		p.appendSplitAtSpaces(out, line)
+	} else {
+		appendHTMLText(out, line)
+	}
+	if sa != "" {
+		out.WriteString(`</span>`)
+	}
+	out.WriteString(`</div>`)
+	if bg {
+		out.WriteString(`</div>`)
+	}
 }
 
 func cachedStateStyleAttr(s *State) string {
@@ -185,33 +280,6 @@ func cachedStateStyleAttr(s *State) string {
 	}, s.DefaultBG)
 	s.styleAttrMap[key] = v
 	return v
-}
-
-func appendWrappedAlignedLineHTML(out *strings.Builder, inner string, s *State) {
-	if inner == "" {
-		return
-	}
-	var b strings.Builder
-	b.WriteString(`<div style="text-align:`)
-	b.WriteString(s.Align)
-	b.WriteString(`;`)
-	appendSectionIndentStyle(&b, s)
-	b.WriteString(`">`)
-	b.WriteString(inner)
-	b.WriteString(`</div>`)
-	wrapped := b.String()
-	if s.BGColor != s.DefaultBG && s.BGColor != "default" {
-		var bgWrap strings.Builder
-		bgWrap.WriteString(`<div style="`)
-		if tryAppendColorProperty(&bgWrap, "background-color:", s.BGColor) {
-			bgWrap.WriteString(`;width:100%;display:block;">`)
-			bgWrap.WriteString(wrapped)
-			bgWrap.WriteString(`</div>`)
-			out.WriteString(bgWrap.String())
-			return
-		}
-	}
-	out.WriteString(wrapped)
 }
 
 func sectionIndentStyleEm(s *State) float64 {

@@ -116,6 +116,12 @@ func TestPartialTag(t *testing.T) {
 	if !strings.Contains(out, `class="Mu-partial"`) || !strings.Contains(out, `data-partial-url="nomadnetwork://f64a:/page/partial_1.mu"`) {
 		t.Fatal(out)
 	}
+	if !strings.Contains(out, `data-partial-destination="f64a:/page/partial_1.mu"`) || !strings.Contains(out, `data-partial-descriptor="f64a:/page/partial_1.mu"`) {
+		t.Fatal(out)
+	}
+	if !strings.Contains(out, "\u29d6") {
+		t.Fatal("want placeholder U+29D6 inside partial div", out)
+	}
 }
 
 func TestPartialTagWithRefresh(t *testing.T) {
@@ -123,5 +129,49 @@ func TestPartialTagWithRefresh(t *testing.T) {
 	out := p.ConvertMicronToHTML("`{f64a:/page/refreshing_partial.mu`10}")
 	if !strings.Contains(out, `class="Mu-partial"`) || !strings.Contains(out, `data-partial-refresh="10"`) {
 		t.Fatal(out)
+	}
+}
+
+func TestPartialTagFieldsPid(t *testing.T) {
+	p := Parser{DarkTheme: true, ForceMonospace: false}
+	out := p.ConvertMicronToHTML("`{f64a:/page/x.mu`10`pid=stable|k=v}")
+	if !strings.Contains(out, `data-partial-id="stable"`) || !strings.Contains(out, `data-partial-fields="pid=stable|k=v"`) {
+		t.Fatal(out)
+	}
+}
+
+func TestInterleavedFGTruecolor(t *testing.T) {
+	p := Parser{DarkTheme: true, ForceMonospace: false}
+	out := p.ConvertMicronToHTML("`F123`F456`hello")
+	if !strings.Contains(out, "#415263") || !strings.Contains(out, "ello") {
+		t.Fatal(out)
+	}
+}
+
+func TestHeadingStripWhenFieldPresent(t *testing.T) {
+	p := Parser{DarkTheme: true, ForceMonospace: false}
+	out := p.ConvertMicronToHTML(">>`<24|name`val>")
+	if !strings.Contains(out, `name`) || !strings.Contains(out, `type="text"`) {
+		t.Fatal(out)
+	}
+}
+
+func TestLineLeadingBackslashPreEscape(t *testing.T) {
+	p := Parser{DarkTheme: true, ForceMonospace: false}
+	out := p.ConvertMicronToHTML("\\hello")
+	if strings.Contains(out, "\\hello") || !strings.Contains(out, "hello") {
+		t.Fatal(out)
+	}
+}
+
+func TestLiteralBlockPreservesASCIIBackticks(t *testing.T) {
+	p := Parser{DarkTheme: true, ForceMonospace: true}
+	src := "`=\n| '_ ` _ \\|\n`="
+	out := p.ConvertMicronToHTML(src)
+	if strings.Count(out, "Mu-mnt") < 6 {
+		t.Fatal("expected monospace spans for literal FIGlet-like line", out)
+	}
+	if strings.Contains(out, `text-decoration:underline`) {
+		t.Fatal("underscore inside literal must not toggle underline", out)
 	}
 }

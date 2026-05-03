@@ -34,7 +34,7 @@ func (p *Parser) ConvertMicronToHTML(markup string) string {
 	var b strings.Builder
 	if len(markup) > 0 {
 		// Output is often larger than input. Pre-grow reduces reallocations for typical docs.
-		b.Grow(len(markup) + len(markup)/2)
+		b.Grow(4 * len(markup))
 	}
 	for start := 0; start <= len(markup); {
 		nextRel := strings.IndexByte(markup[start:], '\n')
@@ -51,8 +51,6 @@ func (p *Parser) ConvertMicronToHTML(markup string) string {
 		switch k {
 		case lineOmit:
 			continue
-		case lineNil:
-			b.WriteString("<br>")
 		}
 	}
 	var out strings.Builder

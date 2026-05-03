@@ -81,11 +81,17 @@ type Link struct {
 	Style  Style
 }
 
-// Partial is an asynchronously loaded micron block with optional refresh interval.
+// Partial is an asynchronously loaded micron block (placeholder ⧖) with optional
+// refresh interval and field metadata, matching micron-parser-js / NomadNet.
 type Partial struct {
-	URL            string
-	RefreshSeconds int
-	Style          Style
+	URL         string
+	Destination string
+	Descriptor  string
+	FieldsAttr  string
+	PartialID   string
+	HasRefresh  bool
+	Refresh     float64
+	Style       Style
 }
 
 // linePart is one segment on a line after makeOutput.

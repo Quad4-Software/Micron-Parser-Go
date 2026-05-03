@@ -8,40 +8,66 @@ import (
 	"strings"
 )
 
-func (p *Parser) parsePartial(line string, start int, s *State) (skip int, pt *Partial) {
-	if start < 0 || start >= len(line) {
-		return 0, nil
+// parsePartialFromInner parses the interior after a line-leading "`{" up to the
+// first '}', matching MicronParser.parse_partial in NomadNet and parsePartial in
+// micron-parser-js (url[`refresh[`fields]]).
+func (p *Parser) parsePartialFromInner(rest string, s *State) *Partial {
+	before, _, ok := strings.Cut(rest, "}")
+	if !ok {
+		return nil
 	}
-	end := strings.IndexByte(line[start+1:], '}')
-	if end < 0 {
-		return 0, nil
+	data := before
+	if data == "" {
+		return nil
 	}
-	end += start + 1
-	raw := strings.TrimSpace(line[start+1 : end])
-	if raw == "" {
-		return 0, nil
+	parts := strings.Split(data, "`")
+	if len(parts) > 3 {
+		return nil
 	}
-	before, after, ok := strings.Cut(raw, "`")
-	urlPart := raw
-	refreshPart := ""
-	if ok {
-		urlPart = before
-		refreshPart = after
+	var urlPart string
+	var fieldsStr string
+	var refresh *float64
+	switch len(parts) {
+	case 1:
+		urlPart = parts[0]
+	case 2:
+		urlPart = parts[0]
+		if r, err := strconv.ParseFloat(parts[1], 64); err == nil {
+			refresh = &r
+		}
+	case 3:
+		urlPart = parts[0]
+		if r, err := strconv.ParseFloat(parts[1], 64); err == nil {
+			refresh = &r
+		}
+		fieldsStr = parts[2]
 	}
-	url := strings.TrimSpace(urlPart)
-	if url == "" {
-		return 0, nil
+	urlPart = strings.TrimSpace(urlPart)
+	if urlPart == "" {
+		return nil
 	}
-	refresh := 0
-	if refreshPart != "" {
-		secs, err := strconv.Atoi(strings.TrimSpace(refreshPart))
-		if err == nil && secs > 0 {
-			refresh = secs
+	pt := &Partial{
+		URL:         FormatNomadnetworkURL(urlPart),
+		Destination: urlPart,
+		Descriptor:  data,
+		Style:       p.stateToStyle(s),
+	}
+	if fieldsStr != "" {
+		pt.FieldsAttr = fieldsStr
+		for f := range strings.SplitSeq(fieldsStr, "|") {
+			if strings.HasPrefix(f, "pid=") {
+				pt.PartialID = f[len("pid="):]
+				break
+			}
 		}
 	}
-	return end - start + 1, &Partial{
-		URL:            FormatNomadnetworkURL(url),
-		RefreshSeconds: refresh,
-		Style:          p.stateToStyle(s),
+	if refresh != nil && *refresh >= 1 {
+		pt.HasRefresh = true
+		pt.Refresh = *refresh
 	}
+	return pt
+}
+
+func formatPartialRefresh(r float64) string {
+	return strconv.FormatFloat(r, 'f', -1, 64)
 }

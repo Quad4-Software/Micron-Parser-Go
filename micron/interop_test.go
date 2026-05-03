@@ -163,6 +163,12 @@ func interopCorpus() []interopCase {
 		{name: "empty-lines", markup: "a\n\nb"},
 		{name: "comment", markup: "shown\n# hidden"},
 		{name: "ascii-cicada", markup: ".,~::::: ::: .,~::::: :::. :::::::-. :::.\n,;;;'''''' ;;; ,;;;'''''' ;;';; ;;, '';, ;;';;\n[[[ [[[ [[[ ,[[ '[[, '[[ [[ ,[[ '[[,\n$$$ $$$ $$$ c$$$cc$$$c $$, $$ c$$$cc$$$c\n'88bo,__,o, 888 '88bo,__,o, 888 888 888_,o8P' 888 888\n\"YUMMMMMP\" MMM \"YUMMMMMP\" YMM M\"M 'MMMMP\"' YMM M\"M"},
+		{name: "partial-inline-metadata", markup: "`{f64a:/page/block.mu`30`pid=a|b=c}"},
+		{name: "heading-strip-field", markup: ">`<16|u`v>"},
+		{name: "interleaved-fg", markup: "`F123`F456`hello"},
+		{name: "lead-backslash", markup: "\\alpha"},
+		{name: "bare-heading-depth", markup: ">>\nnext line"},
+		{name: "literal-toggle-spaces", markup: " `= \nx\n`= "},
 	}
 	out := make([]interopCase, 0, len(markups)*4)
 	for _, m := range markups {

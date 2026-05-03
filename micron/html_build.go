@@ -39,61 +39,65 @@ func hasAnyStyle(st Style, defaultBG string) bool {
 	return st.Bold || st.Underline || st.Italic
 }
 
+// appendOutput writes the styled HTML for parts directly into b. It defers
+// emitting the opening <span> until a non-empty body part is encountered,
+// which avoids both the intermediate per-line strings.Builder used for
+// buffering body text and any "open span / no body / discard" round trips.
 func (p *Parser) appendOutput(b *strings.Builder, parts []linePart, s *State) {
 	var cur Style
-	var have bool
-	var span strings.Builder
+	var styleSet bool
+	var spanOpen bool
 
-	flush := func() {
-		if !have {
-			return
-		}
-		st := cur
-		body := span.String()
-		span.Reset()
-		have = false
-		if body == "" {
-			return
-		}
-		if appendStyledSpanOpen(b, st, s.DefaultBG) {
-			b.WriteString(body)
+	closeSpan := func() {
+		if spanOpen {
 			b.WriteString(`</span>`)
-		} else {
-			b.WriteString(body)
+			spanOpen = false
+		}
+		styleSet = false
+	}
+	ensureSpan := func() {
+		if !spanOpen && styleSet {
+			spanOpen = appendStyledSpanOpen(b, cur, s.DefaultBG)
 		}
 	}
 
-	for _, pr := range parts {
+	for i := range parts {
+		pr := &parts[i]
 		if pr.field != nil || pr.link != nil || pr.partial != nil {
-			flush()
-		}
-		if pr.field != nil {
-			p.writeField(b, pr.field, s)
-			continue
-		}
-		if pr.link != nil {
-			p.writeLink(b, pr.link, s)
-			continue
-		}
-		if pr.partial != nil {
-			p.writePartial(b, pr.partial, s)
+			closeSpan()
+			switch {
+			case pr.field != nil:
+				p.writeField(b, pr.field, s)
+			case pr.link != nil:
+				p.writeLink(b, pr.link, s)
+			default:
+				p.writePartial(b, pr.partial, s)
+			}
 			continue
 		}
 		st := pr.style
-		if !have || !stylesEqual(&st, &cur) {
-			flush()
+		if !styleSet || !stylesEqual(&st, &cur) {
+			closeSpan()
 			cur = st
-			have = true
+			styleSet = true
 		}
+		if pr.html == "" && pr.text == "" {
+			continue
+		}
+		ensureSpan()
 		if pr.html != "" {
-			span.WriteString(pr.html)
+			b.WriteString(pr.html)
 		} else if p.ForceMonospace {
-			p.appendSplitAtSpaces(&span, pr.text)
+			if s.Literal {
+				p.appendForceMonospace(b, pr.text)
+			} else {
+				p.appendSplitAtSpaces(b, pr.text)
+			}
 		} else {
-			appendHTMLText(&span, pr.text)
+			appendHTMLText(b, pr.text)
 		}
 	}
-	flush()
+	closeSpan()
 }
 
 func (p *Parser) writeField(b *strings.Builder, f *Field, s *State) {
@@ -215,14 +219,30 @@ func (p *Parser) writeLink(b *strings.Builder, lk *Link, s *State) {
 func (p *Parser) writePartial(b *strings.Builder, pt *Partial, s *State) {
 	b.WriteString(`<div class="Mu-partial" data-partial-url="`)
 	b.WriteString(htmlAttr(pt.URL))
+	b.WriteString(`" data-partial-destination="`)
+	b.WriteString(htmlAttr(pt.Destination))
+	b.WriteString(`" data-partial-descriptor="`)
+	b.WriteString(htmlAttr(pt.Descriptor))
 	b.WriteString(`"`)
-	if pt.RefreshSeconds > 0 {
+	if pt.PartialID != "" {
+		b.WriteString(` data-partial-id="`)
+		b.WriteString(htmlAttr(pt.PartialID))
+		b.WriteString(`"`)
+	}
+	if pt.HasRefresh {
 		b.WriteString(` data-partial-refresh="`)
-		b.WriteString(strconv.Itoa(pt.RefreshSeconds))
+		b.WriteString(htmlAttr(formatPartialRefresh(pt.Refresh)))
+		b.WriteString(`"`)
+	}
+	if pt.FieldsAttr != "" {
+		b.WriteString(` data-partial-fields="`)
+		b.WriteString(htmlAttr(pt.FieldsAttr))
 		b.WriteString(`"`)
 	}
 	appendQuotedHTMLStyleAttr(b, pt.Style, s.DefaultBG)
-	b.WriteString(`></div>`)
+	b.WriteString(`>`)
+	b.WriteString("\u29d6")
+	b.WriteString(`</div>`)
 }
 
 func htmlAttr(s string) string {
