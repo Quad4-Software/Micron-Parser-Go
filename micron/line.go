@@ -75,6 +75,11 @@ func (p *Parser) parseLineInto(out *strings.Builder, line string, s *State) int 
 				preEscape = true
 			} else if line[0] == '#' {
 				return lineOmit
+			} else if len(line) >= 2 && line[0] == '`' && line[1] == 't' {
+				return p.consumeTableFence(out, line, s)
+			} else if s.TableMode {
+				s.TableLines = append(s.TableLines, line)
+				return lineOmit
 			} else if len(line) >= 2 && line[0] == '`' && line[1] == '{' {
 				pt := p.parsePartialFromInner(line[2:], s)
 				if pt == nil {

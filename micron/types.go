@@ -32,16 +32,20 @@ type Style struct {
 
 // State holds parser state across lines.
 type State struct {
-	Literal      bool
-	Depth        int
-	FGColor      string
-	BGColor      string
-	Formatting   Formatting
-	DefaultAlign string
-	Align        string
-	DefaultFG    string
-	DefaultBG    string
-	styleAttrMap map[stateStyleKey]string
+	Literal        bool
+	TableMode      bool
+	TableLines     []string
+	TableOptsAlign string
+	TableOptsMaxW  int
+	Depth          int
+	FGColor        string
+	BGColor        string
+	Formatting     Formatting
+	DefaultAlign   string
+	Align          string
+	DefaultFG      string
+	DefaultBG      string
+	styleAttrMap   map[stateStyleKey]string
 }
 
 type stateStyleKey struct {
