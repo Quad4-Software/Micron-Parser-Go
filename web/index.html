@@ -284,6 +284,38 @@
   .Mu-partial.error {
     color: #f85149;
   }
+  #preview input.Mu-armed {
+    outline: 1px dashed #fbbf24;
+    outline-offset: 1px;
+  }
+  #preview textarea {
+    font: inherit;
+    color: inherit;
+    background: inherit;
+  }
+  #preview textarea.Mu-multiline {
+    outline: 1px solid #34d399;
+    outline-offset: 1px;
+    resize: vertical;
+  }
+  #multiline-hint {
+    position: fixed;
+    bottom: 12px;
+    right: 12px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    background: #fbbf24;
+    color: #111;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  #multiline-hint.visible {
+    opacity: 1;
+  }
   #context-menu {
     position: fixed;
     z-index: 1000;
@@ -855,6 +887,7 @@ Below is the source code of this entire document, presented as a literal block.
 `=
         
 </script>
+<div id="multiline-hint">Press Enter again to expand to multi-line</div>
 <script src="wasm_exec.js"></script>
 <script>
 (function () {
@@ -1180,53 +1213,109 @@ Below is the source code of this entire document, presented as a literal block.
     }
   });
 
-  function upgradeInputToTextarea(input, rows) {
-    if (!input || input.tagName !== "INPUT") return input;
+  function upgradeInputToTextarea(input, options) {
+    if (!input || !input.tagName || input.tagName !== "INPUT") return input;
     const owner = input.ownerDocument || document;
+    if (!owner) return input;
+    const inputType = (input.type || "").toLowerCase();
+    if (inputType === "password") return input;
+    const opts = options || {};
     const ta = owner.createElement("textarea");
     ta.name = input.name;
-    ta.value = input.value || "";
-    ta.rows = rows && rows > 1 ? rows : 4;
-    if (input.placeholder) ta.placeholder = input.placeholder;
+    const currentValue = (typeof input.value === "string" && input.value.length > 0)
+      ? input.value
+      : (input.getAttribute("value") || "");
+    ta.value = currentValue;
+    const cols = (typeof opts.cols === "number") ? opts.cols
+      : (input.size > 0 ? input.size : null);
+    if (cols) ta.cols = cols;
+    if (typeof opts.rows === "number") ta.rows = opts.rows;
+    else if (!ta.rows || ta.rows < 2) ta.rows = 4;
+    if (opts.wrap) ta.wrap = opts.wrap;
     if (input.disabled) ta.disabled = true;
     if (input.readOnly) ta.readOnly = true;
+    if (input.placeholder) ta.placeholder = input.placeholder;
     if (input.required) ta.required = true;
+    if (input.autocomplete) ta.autocomplete = input.autocomplete;
     if (input.style && input.style.cssText) ta.style.cssText = input.style.cssText;
-    if (input.className) ta.className = input.className;
-    const skip = new Set(["type", "value", "name", "rows", "cols", "wrap"]);
+    const skipAttrs = new Set(["type", "value", "size", "name"]);
     for (const attr of Array.from(input.attributes || [])) {
-      if (!skip.has(attr.name)) ta.setAttribute(attr.name, attr.value);
+      if (skipAttrs.has(attr.name)) continue;
+      if (attr.name === "style") continue;
+      try { ta.setAttribute(attr.name, attr.value); } catch (e) {}
     }
+    if (input.classList && input.classList.length > 0) {
+      ta.className = input.className;
+    }
+    const wasFocused = (owner.activeElement === input);
+    const selStart = (typeof input.selectionStart === "number") ? input.selectionStart : null;
+    const selEnd = (typeof input.selectionEnd === "number") ? input.selectionEnd : null;
     ta.setAttribute("data-micron-multiline", "1");
+    ta.setAttribute("data-micron-original-tag", "input");
+    ta.setAttribute("data-micron-original-type", input.type || "text");
     input.replaceWith(ta);
+    if (wasFocused && typeof ta.focus === "function") {
+      try {
+        ta.focus();
+        if (selStart !== null && selEnd !== null && typeof ta.setSelectionRange === "function") {
+          ta.setSelectionRange(selStart, selEnd);
+        }
+      } catch (e) {}
+    }
+    ta.dispatchEvent(new CustomEvent("micron-field-upgraded", {
+      bubbles: true,
+      detail: { from: "input", to: "textarea", element: ta, previous: input }
+    }));
     return ta;
   }
 
-  function enableDoubleEnterMultiline(root, opts) {
-    if (!root || typeof root.addEventListener !== "function") return;
-    const windowMs = (opts && typeof opts.windowMs === "number") ? opts.windowMs : 500;
-    const rows = (opts && typeof opts.rows === "number") ? opts.rows : 4;
+  function enableDoubleEnterMultiline(root, options) {
+    if (!root || typeof root.addEventListener !== "function") return function(){};
+    const opts = options || {};
+    const windowMs = typeof opts.windowMs === "number" ? opts.windowMs : 500;
+    const rows = typeof opts.rows === "number" ? opts.rows : 4;
+    const filter = typeof opts.filter === "function" ? opts.filter : null;
+    const suppressFirst = opts.suppressFirstEnter !== false;
     const lastEnter = new WeakMap();
     const armTimers = new WeakMap();
+    const hintEl = document.getElementById("multiline-hint");
+    let hintTimer = 0;
     const disarm = (el) => {
-      lastEnter.delete(el);
+      if (lastEnter.has(el)) {
+        lastEnter.delete(el);
+        try {
+          el.dispatchEvent(new CustomEvent("micron-multiline-disarmed", {
+            bubbles: true,
+            detail: { element: el }
+          }));
+        } catch (_) {}
+      }
       const t = armTimers.get(el);
-      if (t) { clearTimeout(t); armTimers.delete(el); }
+      if (t) {
+        clearTimeout(t);
+        armTimers.delete(el);
+      }
+      if (hintEl) {
+        hintEl.classList.remove("visible");
+        clearTimeout(hintTimer);
+      }
     };
-    root.addEventListener("keydown", (e) => {
+    const onKey = (e) => {
       if (e.key !== "Enter" || e.isComposing) return;
       if (e.shiftKey || e.ctrlKey || e.metaKey || e.altKey) return;
       const el = e.target;
       if (!el || el.tagName !== "INPUT") return;
       const t = (el.type || "text").toLowerCase();
+      if (t === "password") return;
       if (t !== "text" && t !== "") return;
+      if (filter && !filter(el)) return;
       const now = Date.now();
       const prev = lastEnter.get(el) || 0;
       if (prev > 0 && (now - prev) <= windowMs) {
         e.preventDefault();
         disarm(el);
         const cursor = (typeof el.selectionStart === "number") ? el.selectionStart : el.value.length;
-        const ta = upgradeInputToTextarea(el, rows);
+        const ta = upgradeInputToTextarea(el, { rows });
         const before = (ta.value || "").slice(0, cursor);
         const after = (ta.value || "").slice(cursor);
         ta.value = before + "\n" + after;
@@ -1236,16 +1325,41 @@ Below is the source code of this entire document, presented as a literal block.
             ta.setSelectionRange(before.length + 1, before.length + 1);
           }
         } catch (_) {}
+        try {
+          ta.dispatchEvent(new CustomEvent("micron-field-multiline-enabled", {
+            bubbles: true,
+            detail: { element: ta, trigger: "double-enter" }
+          }));
+        } catch (_) {}
         return;
       }
-      e.preventDefault();
+      if (suppressFirst) e.preventDefault();
       lastEnter.set(el, now);
+      try {
+        el.dispatchEvent(new CustomEvent("micron-multiline-armed", {
+          bubbles: true,
+          detail: { element: el, windowMs }
+        }));
+      } catch (_) {}
+      if (hintEl) {
+        hintEl.classList.add("visible");
+        clearTimeout(hintTimer);
+        hintTimer = setTimeout(() => {
+          hintEl.classList.remove("visible");
+        }, windowMs + 200);
+      }
       const tid = setTimeout(() => disarm(el), windowMs + 16);
       armTimers.set(el, tid);
-    });
-    root.addEventListener("blur", (e) => {
+    };
+    const onBlur = (e) => {
       if (e.target && e.target.tagName === "INPUT") disarm(e.target);
-    }, true);
+    };
+    root.addEventListener("keydown", onKey);
+    root.addEventListener("blur", onBlur, true);
+    return function detach() {
+      root.removeEventListener("keydown", onKey);
+      root.removeEventListener("blur", onBlur, true);
+    };
   }
 
   function sanitizeFileBase(name) {
