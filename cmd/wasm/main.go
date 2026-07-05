@@ -10,7 +10,7 @@ import (
 	"strings"
 	"syscall/js"
 
-	"git.quad4.io/Go-Libs/micron-parser-go/micron"
+	"micron-parser-go/micron"
 )
 
 func main() {

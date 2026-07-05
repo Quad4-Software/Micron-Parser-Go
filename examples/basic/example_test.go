@@ -6,7 +6,7 @@ package basic_test
 import (
 	"fmt"
 
-	"git.quad4.io/Go-Libs/micron-parser-go/micron"
+	"micron-parser-go/micron"
 )
 
 func ExampleFormatNomadnetworkURL() {

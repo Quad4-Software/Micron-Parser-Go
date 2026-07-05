@@ -6,7 +6,7 @@ Playground: https://micron-parser-go.quad4.io/
 
 ## Requirements
 
-- Go 1.26.2+
+- Go 1.26.4+
 - No third-party Go modules (standard library only)
 - Node.js (optional): interop tests, reference-JS benchmarks, and the `bench-js` Makefile target
 
@@ -15,7 +15,7 @@ Playground: https://micron-parser-go.quad4.io/
 Import path:
 
 ```go
-import "git.quad4.io/Go-Libs/micron-parser-go/micron"
+import "micron-parser-go/micron"
 ```
 
 `micron.Parser` holds only two settings: **`DarkTheme`** picks light or dark default colors for the HTML output, and **`ForceMonospace`** toggles monospace styling for the rendered page. The type has no mutable conversion state; a single `Parser` value is safe to reuse from multiple goroutines.
@@ -32,7 +32,7 @@ package main
 import (
 	"fmt"
 
-	"git.quad4.io/Go-Libs/micron-parser-go/micron"
+	"micron-parser-go/micron"
 )
 
 func main() {
