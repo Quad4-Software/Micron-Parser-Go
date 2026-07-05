@@ -3,28 +3,27 @@
 
 package micron
 
-import (
-	"os"
-	"path/filepath"
-	"strings"
-)
+import "os"
 
 func regressionMarkupSeedsStatic() []string {
-	dir := filepath.Join("testdata", "regressions")
-	entries, err := os.ReadDir(dir)
+	var out []string
+	err := withRegressionRoot(func(root *os.Root) error {
+		names, err := listRegressionMuNames(root)
+		if err != nil {
+			return err
+		}
+		out = make([]string, 0, len(names))
+		for _, name := range names {
+			raw, err := readRegressionFile(root, name)
+			if err != nil {
+				continue
+			}
+			out = append(out, string(raw))
+		}
+		return nil
+	})
 	if err != nil {
 		return nil
-	}
-	out := make([]string, 0, len(entries))
-	for _, e := range entries {
-		if e.IsDir() || !strings.HasSuffix(e.Name(), ".mu") {
-			continue
-		}
-		raw, err := os.ReadFile(filepath.Join(dir, e.Name()))
-		if err != nil {
-			continue
-		}
-		out = append(out, string(raw))
 	}
 	return out
 }

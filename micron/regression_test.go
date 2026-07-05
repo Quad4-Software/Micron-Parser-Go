@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"html"
 	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
 	"testing"
@@ -20,11 +19,6 @@ type regressionOpts struct {
 	MustNotContain []string `json:"must_not_contain"`
 }
 
-func regressionDir(t *testing.T) string {
-	t.Helper()
-	return filepath.Join("testdata", "regressions")
-}
-
 func loadRegressionCases(t *testing.T) []struct {
 	name string
 	opts regressionOpts
@@ -32,55 +26,56 @@ func loadRegressionCases(t *testing.T) []struct {
 	want []string
 } {
 	t.Helper()
-	dir := regressionDir(t)
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		t.Fatal(err)
-	}
 	var cases []struct {
 		name string
 		opts regressionOpts
 		mu   string
 		want []string
 	}
-	for _, e := range entries {
-		if e.IsDir() || !strings.HasSuffix(e.Name(), ".mu") {
-			continue
-		}
-		base := strings.TrimSuffix(e.Name(), ".mu")
-		muBytes, err := os.ReadFile(filepath.Join(dir, e.Name()))
+	err := withRegressionRoot(func(root *os.Root) error {
+		names, err := listRegressionMuNames(root)
 		if err != nil {
-			t.Fatal(err)
+			return err
 		}
-		txtBytes, err := os.ReadFile(filepath.Join(dir, base+".txt"))
-		if err != nil {
-			t.Fatalf("regression %s: missing %s.txt", base, base)
-		}
-		opts := regressionOpts{Dark: true, Mono: false}
-		optsPath := filepath.Join(dir, base+".opts.json")
-		if raw, err := os.ReadFile(optsPath); err == nil {
-			if err := json.Unmarshal(raw, &opts); err != nil {
-				t.Fatalf("regression %s: decode opts: %v", base, err)
+		for _, muName := range names {
+			base := strings.TrimSuffix(muName, ".mu")
+			muBytes, err := readRegressionFile(root, muName)
+			if err != nil {
+				return err
 			}
-		}
-		var wantLines []string
-		for line := range strings.SplitSeq(string(txtBytes), "\n") {
-			line = strings.TrimSpace(line)
-			if line != "" {
-				wantLines = append(wantLines, line)
+			txtBytes, err := readRegressionFile(root, base+".txt")
+			if err != nil {
+				t.Fatalf("regression %s: missing %s.txt", base, base)
 			}
+			opts := regressionOpts{Dark: true, Mono: false}
+			if raw, err := readRegressionFile(root, base+".opts.json"); err == nil {
+				if err := json.Unmarshal(raw, &opts); err != nil {
+					t.Fatalf("regression %s: decode opts: %v", base, err)
+				}
+			}
+			var wantLines []string
+			for line := range strings.SplitSeq(string(txtBytes), "\n") {
+				line = strings.TrimSpace(line)
+				if line != "" {
+					wantLines = append(wantLines, line)
+				}
+			}
+			cases = append(cases, struct {
+				name string
+				opts regressionOpts
+				mu   string
+				want []string
+			}{
+				name: base,
+				opts: opts,
+				mu:   string(muBytes),
+				want: wantLines,
+			})
 		}
-		cases = append(cases, struct {
-			name string
-			opts regressionOpts
-			mu   string
-			want []string
-		}{
-			name: base,
-			opts: opts,
-			mu:   string(muBytes),
-			want: wantLines,
-		})
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
 	}
 	if len(cases) == 0 {
 		t.Fatal("no regression cases found")
@@ -90,23 +85,7 @@ func loadRegressionCases(t *testing.T) []struct {
 
 func regressionMarkupSeeds(t *testing.T) []string {
 	t.Helper()
-	dir := regressionDir(t)
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return nil
-	}
-	out := make([]string, 0, len(entries))
-	for _, e := range entries {
-		if e.IsDir() || !strings.HasSuffix(e.Name(), ".mu") {
-			continue
-		}
-		raw, err := os.ReadFile(filepath.Join(dir, e.Name()))
-		if err != nil {
-			t.Fatal(err)
-		}
-		out = append(out, string(raw))
-	}
-	return out
+	return regressionMarkupSeedsStatic()
 }
 
 func TestRegressionCorpus(t *testing.T) {
