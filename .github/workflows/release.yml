@@ -31,8 +31,36 @@ env:
     GO_VERSION: "1.26.2"
 
 jobs:
+    verify:
+        name: Test before release
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        steps:
+            - name: Checkout
+              uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+
+            - name: Set up Go
+              uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c
+              with:
+                  go-version: ${{ env.GO_VERSION }}
+                  cache: true
+
+            - name: Set up Node
+              uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f
+              with:
+                  node-version: "22"
+
+            - name: Verify
+              run: |
+                  set -euo pipefail
+                  make check-vendor-js
+                  go test -count=1 ./...
+                  go test -count=1 ./micron -run 'TestInteropWithReferenceJS|TestRegressionCorpus'
+                  make test-wasm
+
     release:
         name: Build and publish
+        needs: verify
         runs-on: ubuntu-latest
         timeout-minutes: 15
         steps:

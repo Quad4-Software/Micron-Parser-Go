@@ -1,0 +1,5 @@
+{
+    "dark": true,
+    "mono": true,
+    "must_contain": ["\\"]
+}

@@ -156,6 +156,18 @@ func TestHeadingStripWhenFieldPresent(t *testing.T) {
 	}
 }
 
+func TestBackslashBeforeBracketInMarkup(t *testing.T) {
+	p := Parser{DarkTheme: true}
+	line := "`Fe81`!\\[04.07.2026 02:55]: `Ffffigloo: ``Hi from Canada!"
+	out := p.ConvertMicronToHTML(line)
+	if strings.Contains(out, `\`) {
+		t.Fatalf("backslash before [ should be consumed, got %q", out)
+	}
+	if !strings.Contains(out, "[04.07.2026 02:55]:") {
+		t.Fatalf("want [04.07.2026 02:55]: without backslash, got %q", out)
+	}
+}
+
 func TestLineLeadingBackslashPreEscape(t *testing.T) {
 	p := Parser{DarkTheme: true, ForceMonospace: false}
 	out := p.ConvertMicronToHTML("\\hello")

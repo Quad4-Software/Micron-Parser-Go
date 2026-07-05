@@ -1,0 +1,5 @@
+{
+    "dark": true,
+    "mono": false,
+    "must_not_contain": ["<script", "<img"]
+}

@@ -8,10 +8,12 @@ import (
 	"encoding/json"
 	"html"
 	"math/rand"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -47,26 +49,67 @@ func TestInteropWithReferenceJS(t *testing.T) {
 		t.Fatalf("interop output mismatch: got=%d want=%d", len(jsOutputs), len(cases))
 	}
 	for i, tc := range cases {
-		if tc.Mono {
-			continue
-		}
 		p := &Parser{DarkTheme: tc.Dark, ForceMonospace: tc.Mono}
 		goOut := p.ConvertMicronToHTML(tc.Markup)
 		jsOut := jsOutputs[i]
-		goSig := signatureFromHTML(goOut)
-		jsSig := signatureFromHTML(jsOut)
-		if !sigsEqual(goSig, jsSig) {
+		if !interopSemanticallyEqual(goOut, jsOut, tc.Mono) {
+			goSig := interopSignatureFromHTML(goOut, tc.Mono)
+			jsSig := interopSignatureFromHTML(jsOut, tc.Mono)
 			t.Fatalf("interop mismatch on %s\nGo: %#v\nJS: %#v\nGo HTML: %s\nJS HTML: %s",
 				tc.Name, goSig, jsSig, goOut, jsOut)
 		}
 	}
 }
 
-func TestInteropRandomizedDeterministic(t *testing.T) {
+func TestInteropMonospaceVisibleText(t *testing.T) {
 	if _, err := exec.LookPath("node"); err != nil {
 		t.Skip("node not found")
 	}
-	t.Skip("Go and JS implementations have diverged in HTML structure; skipping randomized interop test")
+	cases := interopCorpus()
+	jsOutputs := runJSInterop(t, cases)
+	for i, tc := range cases {
+		if !tc.Mono {
+			continue
+		}
+		p := &Parser{DarkTheme: tc.Dark, ForceMonospace: true}
+		goOut := p.ConvertMicronToHTML(tc.Markup)
+		jsOut := jsOutputs[i]
+		if visibleTextForInterop(goOut, true) != visibleTextForInterop(jsOut, true) {
+			t.Fatalf("mono visible text mismatch on %s\nGo: %q\nJS: %q",
+				tc.Name, visibleTextForInterop(goOut, true), visibleTextForInterop(jsOut, true))
+		}
+	}
+}
+
+func TestInteropRandomizedDeterministic(t *testing.T) {
+	if os.Getenv("INTEROP_RANDOM") != "1" {
+		t.Skip("set INTEROP_RANDOM=1 to run exhaustive randomized JS interop (hr/heading edge cases may still differ)")
+	}
+	if _, err := exec.LookPath("node"); err != nil {
+		t.Skip("node not found")
+	}
+	const iterations = 32
+	rng := rand.New(rand.NewSource(0x6d755f67705f696e)) // "mu_gopin"
+	for i := range iterations {
+		markup := randomMarkup(rng)
+		for _, dark := range []bool{true, false} {
+			t.Run(boolName(dark, "dark", "light")+"-"+strconv.Itoa(i), func(t *testing.T) {
+				tc := interopCase{
+					Name:   boolName(dark, "dark", "light"),
+					Markup: markup,
+					Dark:   dark,
+					Mono:   false,
+				}
+				jsOut := runJSInterop(t, []interopCase{tc})[0]
+				p := &Parser{DarkTheme: dark, ForceMonospace: false}
+				goOut := p.ConvertMicronToHTML(markup)
+				if !interopSemanticallyEqual(goOut, jsOut, false) {
+					t.Fatalf("randomized interop mismatch\nmarkup: %q\nGo HTML: %s\nJS HTML: %s",
+						markup, goOut, jsOut)
+				}
+			})
+		}
+	}
 }
 
 func runJSInterop(t *testing.T, cases []interopCase) []string {
@@ -93,15 +136,10 @@ func runJSInterop(t *testing.T, cases []interopCase) []string {
 	return outputs
 }
 
-var tagStripper = regexp.MustCompile(`<[^>]*>`)
-var wsCollapse = regexp.MustCompile(`\s+`)
 var tagMatcher = regexp.MustCompile(`<\s*([a-zA-Z0-9]+)\b`)
 
 func signatureFromHTML(in string) htmlSig {
-	txt := tagStripper.ReplaceAllString(in, " ")
-	txt = html.UnescapeString(txt)
-	txt = wsCollapse.ReplaceAllString(txt, " ")
-	txt = strings.TrimSpace(txt)
+	txt := visibleTextFromHTML(in)
 	tagCount := map[string]int{}
 	for _, m := range tagMatcher.FindAllStringSubmatch(in, -1) {
 		tagCount[strings.ToLower(m[1])]++
@@ -142,6 +180,28 @@ func sigsEqual(a, b htmlSig) bool {
 		slices.Equal(a.InputNames, b.InputNames)
 }
 
+func interopSignatureFromHTML(in string, mono bool) htmlSig {
+	sig := signatureFromHTML(in)
+	if mono {
+		sig.TextNormalized = visibleTextForInterop(in, true)
+	}
+	return sig
+}
+
+func visibleTextForInterop(html string, mono bool) string {
+	txt := visibleTextFromHTML(html)
+	if mono {
+		return strings.ReplaceAll(txt, " ", "")
+	}
+	return txt
+}
+
+func interopSemanticallyEqual(goOut, jsOut string, mono bool) bool {
+	goSig := interopSignatureFromHTML(goOut, mono)
+	jsSig := interopSignatureFromHTML(jsOut, mono)
+	return sigsEqual(goSig, jsSig)
+}
+
 func interopCorpus() []interopCase {
 	markups := []struct {
 		name   string
@@ -167,6 +227,7 @@ func interopCorpus() []interopCase {
 		{name: "heading-strip-field", markup: ">`<16|u`v>"},
 		{name: "interleaved-fg", markup: "`F123`F456`hello"},
 		{name: "lead-backslash", markup: "\\alpha"},
+		{name: "backslash-bracket", markup: "`Fe81`!\\[04.07.2026 02:55]: `Ffffigloo: ``Hi from Canada!"},
 		{name: "bare-heading-depth", markup: ">>\nnext line"},
 		{name: "literal-toggle-spaces", markup: " `= \nx\n`= "},
 	}

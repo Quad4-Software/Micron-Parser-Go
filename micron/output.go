@@ -12,7 +12,7 @@ func backslashEscapesOnlyMicronSpecial(line string, pos int) bool {
 		return false
 	}
 	switch line[pos] {
-	case '`', '\\':
+	case '`', '\\', '[':
 		return true
 	default:
 		return false
@@ -58,6 +58,18 @@ func (p *Parser) makeOutput(s *State, line string, preEscape bool) []linePart {
 		}
 		if !modeText {
 			c := line[i]
+			if c == '\\' {
+				if backslashEscapesOnlyMicronSpecial(line, i+1) {
+					modeText = true
+					escape = true
+					i++
+					continue
+				}
+				part.WriteByte('\\')
+				modeText = true
+				i++
+				continue
+			}
 			switch c {
 			case '_':
 				s.Formatting.Underline = !s.Formatting.Underline

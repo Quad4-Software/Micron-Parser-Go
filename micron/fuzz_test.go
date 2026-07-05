@@ -70,6 +70,10 @@ func FuzzConvertMicronToHTML(f *testing.F) {
 		"plain \\\\ two backslashes",
 		"`[x`javascript:alert(1)`]",
 		"`{x:data:text/html,<svg/onload=alert(1)>}",
+		"`Fe81`!\\[04.07.2026 02:55]: `Ffffigloo: ``Hi from Canada!",
+	}
+	for _, s := range regressionMarkupSeedsStatic() {
+		seeds = append(seeds, s)
 	}
 	for _, s := range seeds {
 		f.Add(s)

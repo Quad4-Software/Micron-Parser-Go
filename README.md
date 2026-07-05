@@ -144,14 +144,19 @@ The WASM program registers these and then blocks on the Go scheduler (`select {}
 ## Quality, verification and security
 
 - Unit tests and edge/smoke suites are in `micron/*_test.go`
+- **Regression corpus** — `micron/testdata/regressions/*.mu` with matching `.txt` expected visible fragments (add a case when fixing parser bugs)
 - Security tests cover HTML escaping and attribute escaping
-- Fuzz targets cover parser conversion and header parsing
+- Fuzz targets cover parser conversion and header parsing (regression markup is included as fuzz seed input)
 - Race/concurrency coverage is included in concurrent conversion tests
 - Goroutine leak guard checks repeated conversion paths
-- JS interop test compares output signatures against `micron-parser-js`
+- JS interop tests compare semantic output (visible text, links, fields) against `micron/testdata/micron-parser.js`
+- Monospace interop compares whitespace-compacted visible text (Go per-cell spans vs JS word groups)
+- WASM smoke test (`make test-wasm`) exercises `micronConvert` via Node + `wasm_exec.js`
+- Reference JS must match `web/static/vendor/micron-parser.js` (`make check-vendor-js` / `make sync-vendor-js`)
 - Benchmarks: `make bench` (native Go + reference JS, NomadNet corpus)
 - Property-based tests in `micron/property_test.go`
 - `make fuzz` runs every fuzz target in `micron/fuzz_test.go` (override duration with `FUZZTIME=30s`)
+- `make verify` runs vendor sync check, race tests, interop, wasm smoke, and fuzz
 
 ## License
 

@@ -4,10 +4,12 @@
 GOROOT := $(shell go env GOROOT)
 WASM_OUT := web/micron.wasm
 WASM_JS := web/wasm_exec.js
+REF_JS := micron/testdata/micron-parser.js
+VENDOR_JS := web/static/vendor/micron-parser.js
 
-.PHONY: all test test-race test-smoke test-interop fuzz wasm clean cover bench bench-go bench-js
+.PHONY: all test test-race test-smoke test-interop test-wasm fuzz wasm clean cover bench bench-go bench-js sync-vendor-js check-vendor-js verify
 
-all: test wasm
+all: check-vendor-js test wasm
 
 test:
 	go test -count=1 -cover ./...
@@ -16,10 +18,21 @@ test-race:
 	go test -count=1 -race ./...
 
 test-smoke:
-	go test -count=1 ./micron -run 'TestSmoke|TestEdge|TestSecurity|TestConcurrent|TestNoGoroutineLeak'
+	go test -count=1 ./micron -run 'TestSmoke|TestEdge|TestSecurity|TestConcurrent|TestNoGoroutineLeak|TestRegressionCorpus'
 
 test-interop:
-	go test -count=1 ./micron -run TestInteropWithReferenceJS
+	go test -count=1 ./micron -run 'TestInterop'
+
+test-wasm: wasm
+	node ./micron/testdata/wasm_smoke.js
+
+sync-vendor-js:
+	cp $(REF_JS) $(VENDOR_JS)
+
+check-vendor-js:
+	@diff -q $(REF_JS) $(VENDOR_JS) >/dev/null || (echo "reference JS out of sync; run: make sync-vendor-js" >&2; exit 1)
+
+verify: check-vendor-js test-race test-interop test-wasm fuzz
 
 FUZZTIME ?= 3s
 

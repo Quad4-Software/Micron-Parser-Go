@@ -604,6 +604,14 @@ applyStyleToElement(el, style, defaultBg = "default") {
         return null;
     }
 
+    backslashEscapesOnlyMicronSpecial(line, pos) {
+        if (pos >= line.length) {
+            return false;
+        }
+        const c = line[pos];
+        return c === "`" || c === "\\" || c === "[";
+    }
+
     makeOutput(state, line, preEscape = false) {
         if (state.literal) {
             if (line === "\\`=") {
@@ -644,6 +652,18 @@ applyStyleToElement(el, style, defaultBg = "default") {
             }
 
             if (mode === "formatting") {
+                if (c === "\\") {
+                    if (this.backslashEscapesOnlyMicronSpecial(line, i + 1)) {
+                        mode = "text";
+                        escape = true;
+                        i++;
+                        continue;
+                    }
+                    part += c;
+                    mode = "text";
+                    i++;
+                    continue;
+                }
                 switch (c) {
                     case '_':
                         state.formatting.underline = !state.formatting.underline;
@@ -767,7 +787,11 @@ applyStyleToElement(el, style, defaultBg = "default") {
                     part += c;
                     escape = false;
                 } else if (c === '\\') {
-                    escape = true;
+                    if (!this.backslashEscapesOnlyMicronSpecial(line, i + 1)) {
+                        part += c;
+                    } else {
+                        escape = true;
+                    }
                 } else if (c === '`') {
                     if (i + 1 < line.length && line[i + 1] === '`') {
                         flushPart();

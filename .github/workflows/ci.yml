@@ -1,4 +1,4 @@
-# Linux CI: vet, revive, gosec, tests (race + JS interop), fuzz, govulncheck, Go benchmarks.
+# Linux CI: vet, revive, gosec, tests (race + interop + wasm), fuzz, govulncheck, Go benchmarks.
 #
 # Bump action versions by changing the tag in `uses:` and the SHA in the comment
 # block below (verify with):
@@ -26,6 +26,8 @@ on:
             - main
             - dev
     workflow_dispatch:
+    schedule:
+        - cron: "0 6 * * 0"
 
 permissions:
     contents: read
@@ -37,7 +39,7 @@ concurrency:
 env:
     GO_VERSION: "1.26.2"
     NODE_VERSION: "22"
-    FUZZTIME: "15s"
+    FUZZTIME: ${{ github.event_name == 'schedule' && '120s' || '15s' }}
     GOVULN_VERSION: "v1.3.0"
     REVIVE_VERSION: "v1.11.0"
     GOSEC_VERSION: "v2.22.10"
@@ -59,12 +61,12 @@ jobs:
                     - name: Gosec
                       id: gosec
                       timeout: 15
-                    - name: Tests (race + interop)
+                    - name: Tests (race + interop + wasm)
                       id: test
-                      timeout: 20
+                      timeout: 25
                     - name: Fuzz
                       id: fuzz
-                      timeout: 25
+                      timeout: ${{ github.event_name == 'schedule' && 45 || 25 }}
                     - name: govulncheck
                       id: vuln
                       timeout: 15
@@ -82,7 +84,7 @@ jobs:
                   go-version: ${{ env.GO_VERSION }}
                   cache: true
 
-            - name: Set up Node (interop tests)
+            - name: Set up Node
               if: matrix.task.id == 'test'
               uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f
               with:
@@ -93,6 +95,7 @@ jobs:
                   set -euo pipefail
                   case "${{ matrix.task.id }}" in
                     lint)
+                      make check-vendor-js
                       go vet ./...
                       go install github.com/mgechev/revive@${{ env.REVIVE_VERSION }}
                       "$(go env GOPATH)/bin/revive" -config revive.toml -formatter friendly ./micron/*
@@ -103,6 +106,8 @@ jobs:
                       ;;
                     test)
                       go test -count=1 -race ./...
+                      go test -count=1 ./micron -run 'TestInteropWithReferenceJS|TestInteropMonospaceVisibleText|TestRegressionCorpus'
+                      make test-wasm
                       ;;
                     fuzz)
                       make FUZZTIME="${{ env.FUZZTIME }}" fuzz
