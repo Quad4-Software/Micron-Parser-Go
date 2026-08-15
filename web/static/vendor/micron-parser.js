@@ -7,7 +7,9 @@
  * Documentation for the Micron markdown format can be found here:
  * https://raw.githubusercontent.com/markqvist/NomadNet/refs/heads/master/nomadnet/ui/textui/Guide.py
  */
- 
+
+const MAX_SECTION_DEPTH = 16;
+
 class MicronParser {
 
     constructor(darkTheme = true, enableForceMonospace = true) {
@@ -268,7 +270,7 @@ class MicronParser {
                     while (i < line.length && line[i] === ">") {
                         i++;
                     }
-                    state.depth = i;
+                    state.depth = Math.min(i, MAX_SECTION_DEPTH);
                     let headingLine = line.slice(i).trim();
 
                     if (headingLine.length > 0) {
@@ -385,8 +387,11 @@ class MicronParser {
     }
 
     applySectionIndent(el, state) {
-        // indent by state.depth
-        let indent = (state.depth - 1) * 2;
+        let depth = state.depth;
+        if (depth > MAX_SECTION_DEPTH) {
+            depth = MAX_SECTION_DEPTH;
+        }
+        let indent = (depth - 1) * 2;
         if (indent > 0 ) {
             // Indent according to forceMonospace() character width
             el.style.marginLeft = (indent * 0.6) + "em";

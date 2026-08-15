@@ -14,6 +14,16 @@ const (
 	lineHTML
 )
 
+// maxSectionDepth limits nested > heading indent so CSS margin-left cannot grow without bound.
+const maxSectionDepth = 16
+
+func capSectionDepth(depth int) int {
+	if depth > maxSectionDepth {
+		return maxSectionDepth
+	}
+	return depth
+}
+
 // isLiteralToggleLine reports whether the line is exactly a "`=" toggle
 // surrounded only by ASCII whitespace, without allocating. Matches
 // micron-parser-js / NomadNet "line.trim() === '`='" without a TrimSpace
@@ -98,7 +108,7 @@ func (p *Parser) parseLineInto(out *strings.Builder, line string, s *State) int 
 				for i < len(line) && line[i] == '>' {
 					i++
 				}
-				s.Depth = i
+				s.Depth = capSectionDepth(i)
 				headingLine := trimASCIISpaces(line[i:])
 				if headingLine == "" {
 					return lineOmit
@@ -288,7 +298,7 @@ func cachedStateStyleAttr(s *State) string {
 }
 
 func sectionIndentStyleEm(s *State) float64 {
-	ind := max((s.Depth-1)*2, 0)
+	ind := max((capSectionDepth(s.Depth)-1)*2, 0)
 	if ind <= 0 {
 		return 0
 	}
