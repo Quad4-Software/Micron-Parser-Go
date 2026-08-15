@@ -20,7 +20,7 @@ import "micron-parser-go/micron"
 
 `micron.Parser` holds only two settings: **`DarkTheme`** picks light or dark default colors for the HTML output, and **`ForceMonospace`** toggles monospace styling for the rendered page. The type has no mutable conversion state; a single `Parser` value is safe to reuse from multiple goroutines.
 
-Lines that contain only `>` section markers and optional spaces set the depth for following lines but do not render an empty heading block. Literal mode toggles on a line whose trimmed content is exactly `` `= `` (so padded toggle lines match NomadNet). Multi-line documents are handled line by line in document order.
+Lines that contain only `>` section markers and optional spaces set the depth for following lines but do not render an empty heading block. Section depth is capped at 16. Literal mode toggles on a line whose trimmed content is exactly `` `= `` (so padded toggle lines match NomadNet). Multi-line documents are handled line by line in document order.
 
 ### Convert Micron to HTML
 
@@ -121,7 +121,7 @@ benchstat /tmp/go.txt
 make wasm
 ```
 
-Open `web/index.html` in a browser (local file or any static server).  
+Open `web/index.html` in a browser (local file or any static server).
 `make wasm` writes both `web/micron.wasm` and `web/wasm_exec.js`. These artifacts are generated into `web/` and are intentionally gitignored.
 
 ### JavaScript API (globals)
