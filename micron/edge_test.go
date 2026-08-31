@@ -47,7 +47,7 @@ func TestBareHeadingNoExtraLine(t *testing.T) {
 	if !strings.Contains(out, "bare heading content") {
 		t.Fatalf("expected content to be present: %s", out)
 	}
-	if !strings.Contains(out, "margin-left:1.2em") {
+	if !strings.Contains(out, "margin-inline-start:1.2em") {
 		t.Fatalf("expected section indent for depth 2: %s", out)
 	}
 }
@@ -81,7 +81,7 @@ func TestBareHeadingOnlySpaces(t *testing.T) {
 	p := Parser{DarkTheme: true, ForceMonospace: false}
 	in := ">>   \nnext"
 	out := p.ConvertMicronToHTML(in)
-	if !strings.Contains(out, "next") || !strings.Contains(out, "margin-left:1.2em") {
+	if !strings.Contains(out, "next") || !strings.Contains(out, "margin-inline-start:1.2em") {
 		t.Fatal(out)
 	}
 	if strings.Contains(out, `display:inline-block;width:100%`) {
@@ -93,7 +93,7 @@ func TestBareHeadingSetsSectionIndent(t *testing.T) {
 	p := Parser{DarkTheme: true, ForceMonospace: false}
 	in := ">>>\nindented content"
 	out := p.ConvertMicronToHTML(in)
-	if !strings.Contains(out, "margin-left:2.4em") {
+	if !strings.Contains(out, "margin-inline-start:2.4em") {
 		t.Fatalf("expected section indent for depth 3: %s", out)
 	}
 }
@@ -107,7 +107,7 @@ func TestBareHeadingIssue25Pattern(t *testing.T) {
 		t.Fatalf("expected heading content to be present: %s", out)
 	}
 
-	if !strings.Contains(out, "margin-left:1.2em") {
+	if !strings.Contains(out, "margin-inline-start:1.2em") {
 		t.Fatalf("expected bare heading to set section indent for subsequent content: %s", out)
 	}
 
@@ -156,6 +156,58 @@ func TestArabicCharacters(t *testing.T) {
 	out := p.ConvertMicronToHTML(in)
 	if !strings.Contains(out, "\u0627\u0644\u0639\u0631\u0628\u064A\u0629") {
 		t.Fatalf("expected Arabic text to be preserved: %s", out)
+	}
+}
+
+func TestPersianMonospaceKeepsShapingRun(t *testing.T) {
+	p := Parser{DarkTheme: true, ForceMonospace: true}
+	// Persian "سلام" must stay one text run so letters can join under ForceMonospace.
+	in := "\u0633\u0644\u0627\u0645"
+	out := p.ConvertMicronToHTML(in)
+	if !strings.Contains(out, in) {
+		t.Fatalf("expected continuous Persian word: %s", out)
+	}
+	if strings.Contains(out, `class="Mu-mnt"`) {
+		t.Fatalf("Persian must not be split into Mu-mnt cells: %s", out)
+	}
+	if !strings.Contains(out, `dir="auto"`) {
+		t.Fatalf("expected dir=auto on root: %s", out)
+	}
+}
+
+func TestArabicMonospaceKeepsShapingRun(t *testing.T) {
+	p := Parser{DarkTheme: true, ForceMonospace: true}
+	in := "\u0627\u0644\u0639\u0631\u0628\u064A\u0629"
+	out := p.ConvertMicronToHTML(in)
+	if !strings.Contains(out, in) {
+		t.Fatalf("expected continuous Arabic word: %s", out)
+	}
+	if strings.Contains(out, `class="Mu-mnt"`) {
+		t.Fatalf("Arabic must not be split into Mu-mnt cells: %s", out)
+	}
+}
+
+func TestPersianZWNJKeptInShapingRun(t *testing.T) {
+	p := Parser{DarkTheme: true, ForceMonospace: true}
+	// می\u200cخواهم uses ZWNJ between ی and خ
+	in := "\u0645\u06CC\u200C\u062E\u0648\u0627\u0647\u0645"
+	out := p.ConvertMicronToHTML(in)
+	if !strings.Contains(out, in) {
+		t.Fatalf("expected Persian with ZWNJ intact: %s", out)
+	}
+	if strings.Contains(out, `class="Mu-mnt"`) {
+		t.Fatalf("ZWNJ shaping run must not use Mu-mnt: %s", out)
+	}
+}
+
+func TestMixedLatinArabicMonospace(t *testing.T) {
+	p := Parser{DarkTheme: true, ForceMonospace: true}
+	out := p.ConvertMicronToHTML("hi\u0633\u0644\u0627\u0645")
+	if !strings.Contains(out, "\u0633\u0644\u0627\u0645") {
+		t.Fatalf("expected Persian run preserved: %s", out)
+	}
+	if countMuMnt(out) != 2 {
+		t.Fatalf("want Mu-mnt only for 'h' and 'i', got %d in %s", countMuMnt(out), out)
 	}
 }
 

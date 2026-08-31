@@ -2,11 +2,12 @@
 
 All notable changes to this project are documented in this file. Dates use ISO 8601 (YYYY-MM-DD).
 
-## [unreleased]
+## [1.0.7] - 2026-08-31
 
 ### Fixed
 
-- Cap nested `>` section depth at 16 so CSS `margin-left` cannot grow without bound.
+- Cap nested `>` section depth at 16 so CSS `margin-inline-start` cannot grow without bound.
+- ForceMonospace no longer wraps Arabic Persian Hebrew and related scripts per character so letters keep joining and RTL order works. Root output uses `dir="auto"` and section indent uses logical `margin-inline-start`.
 
 ## [1.0.6] - 2026-07-04
 

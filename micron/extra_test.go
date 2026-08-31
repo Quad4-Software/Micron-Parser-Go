@@ -43,7 +43,7 @@ func TestEmptyLineWithBG(t *testing.T) {
 func TestDepthIndent(t *testing.T) {
 	p := Parser{DarkTheme: true, ForceMonospace: false}
 	out := p.ConvertMicronToHTML(">> x")
-	if !strings.Contains(out, "margin-left:") {
+	if !strings.Contains(out, "margin-inline-start:") {
 		t.Fatal(out)
 	}
 }

@@ -14,7 +14,7 @@ const (
 	lineHTML
 )
 
-// maxSectionDepth limits nested > heading indent so CSS margin-left cannot grow without bound.
+// maxSectionDepth limits nested > heading indent so CSS margin-inline-start cannot grow without bound.
 const maxSectionDepth = 16
 
 func capSectionDepth(depth int) int {
@@ -310,7 +310,7 @@ func appendSectionIndentStyle(b *strings.Builder, s *State) {
 	if em <= 0 {
 		return
 	}
-	b.WriteString("margin-left:")
+	b.WriteString("margin-inline-start:")
 	b.WriteString(strconv.FormatFloat(em, 'f', 1, 64))
 	b.WriteString("em;")
 }
@@ -320,7 +320,7 @@ func appendSectionIndentStyleNoSemi(b *strings.Builder, s *State) {
 	if em <= 0 {
 		return
 	}
-	b.WriteString("margin-left:")
+	b.WriteString("margin-inline-start:")
 	b.WriteString(strconv.FormatFloat(em, 'f', 1, 64))
 	b.WriteString("em")
 }

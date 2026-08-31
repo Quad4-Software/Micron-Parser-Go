@@ -123,10 +123,10 @@ func TestSecurityHTMLAttrsStripAsciiControls(t *testing.T) {
 func TestSecurityHeadingDepthCapped(t *testing.T) {
 	p := Parser{DarkTheme: true, ForceMonospace: true}
 	out := p.ConvertMicronToHTML(strings.Repeat(">", 5000) + "Title")
-	if !strings.Contains(out, "margin-left:18.0em") {
-		t.Fatalf("expected capped margin-left:18.0em, got: %s", out)
+	if !strings.Contains(out, "margin-inline-start:18.0em") {
+		t.Fatalf("expected capped margin-inline-start:18.0em, got: %s", out)
 	}
-	if strings.Contains(out, "margin-left:5998.8em") {
+	if strings.Contains(out, "margin-inline-start:5998.8em") {
 		t.Fatal("uncapped heading depth still present")
 	}
 }

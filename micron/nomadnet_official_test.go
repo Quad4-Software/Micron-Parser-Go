@@ -44,7 +44,7 @@ func TestNomadNetGuideOfficial(t *testing.T) {
 	for _, m := range matrix {
 		p := &Parser{DarkTheme: m.dark, ForceMonospace: m.mono}
 		out := p.ConvertMicronToHTML(string(src))
-		if !strings.HasPrefix(out, `<div style="line-height:1.5;`) {
+		if !strings.HasPrefix(out, `<div dir="auto" style="line-height:1.5;`) {
 			t.Fatalf("dark=%v mono=%v: missing container prefix", m.dark, m.mono)
 		}
 		if !strings.HasSuffix(out, `</div>`) {
