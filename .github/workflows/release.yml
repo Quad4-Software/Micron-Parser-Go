@@ -36,8 +36,14 @@ jobs:
         runs-on: ubuntu-latest
         timeout-minutes: 20
         steps:
+          - name: Harden runner
+            uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+            with:
+              egress-policy: audit
             - name: Checkout
               uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+                with:
+                  persist-credentials: false
 
             - name: Set up Go
               uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c
@@ -64,8 +70,14 @@ jobs:
         runs-on: ubuntu-latest
         timeout-minutes: 15
         steps:
+          - name: Harden runner
+            uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+            with:
+              egress-policy: audit
             - name: Checkout
               uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+                with:
+                  persist-credentials: false
 
             - name: Set up Go
               uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c
