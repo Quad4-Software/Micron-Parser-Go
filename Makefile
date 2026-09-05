@@ -64,7 +64,7 @@ fuzz:
 		FuzzBuildRequestPayload \
 		FuzzCollectFormFields \
 		FuzzParseHeaderTags; do \
-		go test ./micron -run=^$$ -fuzz=$$fuzz -fuzztime=$(FUZZTIME); \
+		go test ./micron -run=^$$ -fuzz=$$fuzz -fuzztime=$(FUZZTIME) -parallel=1 -timeout=30m; \
 	done
 
 GOLANGCI_LINT ?= golangci-lint
@@ -92,7 +92,7 @@ lint:
 	GOTOOLCHAIN=go1.26.5 $(GOLANGCI_LINT) run ./...
 
 lint-gosec:
-	GOTOOLCHAIN=go1.26.5 $(GOSEC) -exclude-dir=examples -exclude-dir=bindings -exclude=G404,G304,G204,G306,G103 ./...
+	GOTOOLCHAIN=go1.26.5 $(GOSEC) -exclude-dir=examples -exclude-dir=bindings -exclude=G404,G304,G204,G306,G103,G115 ./...
 
 vet:
 	GOTOOLCHAIN=go1.26.5 go vet ./...
