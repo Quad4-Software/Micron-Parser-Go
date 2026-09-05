@@ -1,162 +1,126 @@
 # micron-parser-go
 
-Blazingly fast Micron parser and HTML renderer for Go and WebAssembly, based on [micron-parser-js](https://github.com/RFnexus/micron-parser-js). For Go (library) or web based (WASM) applications.
+Micron parser and HTML renderer for Go and WebAssembly.
+Dialect authority is NomadNet Python
+([MicronParser.py](https://github.com/markqvist/NomadNet/blob/master/nomadnet/ui/textui/MicronParser.py)).
+micron-parser-js is a secondary web interop target.
 
 Playground: https://micron-parser-go.quad4.io/
 
+Dialect notes:
+
+```text
+spec/micron.txt
+```
+
 ## Requirements
 
-- Go 1.26.4+
-- No third-party Go modules (standard library only)
-- Node.js (optional): interop tests, reference-JS benchmarks, and the `bench-js` Makefile target
+- Go 1.26.5+
+- Standard library only
+- Node.js (optional, interop / JS bench)
+- Python 3 (optional, NomadNet oracle)
 
-## Library
-
-Import path:
+## Usage
 
 ```go
 import "micron-parser-go/micron"
+
+p := micron.Parser{DarkTheme: true, ForceMonospace: true}
+html := p.ConvertMicronToHTML("> Title\n\nHello `!world`! and `*micron`*.\n")
 ```
 
-`micron.Parser` holds only two settings: **`DarkTheme`** picks light or dark default colors for the HTML output, and **`ForceMonospace`** toggles monospace styling for the rendered page. The type has no mutable conversion state; a single `Parser` value is safe to reuse from multiple goroutines.
+Parser is safe to reuse across goroutines. Related APIs:
 
-Lines that contain only `>` section markers and optional spaces set the depth for following lines but do not render an empty heading block. Section depth is capped at 16. Literal mode toggles on a line whose trimmed content is exactly `` `= `` (so padded toggle lines match NomadNet). Multi-line documents are handled line by line in document order.
-
-### Convert Micron to HTML
-
-`ConvertMicronToHTML` parses the full document, applies optional leading `#!fg=` / `#!bg=` header lines (see below), and returns a self-contained HTML fragment safe for insertion into a host page (escaping is applied consistently with the reference implementation).
-
-```go
-package main
-
-import (
-	"fmt"
-
-	"micron-parser-go/micron"
-)
-
-func main() {
-	p := micron.Parser{
-		DarkTheme:      true,
-		ForceMonospace: true,
-	}
-	src := "> Title\n\nHello `!world`! and `*micron`*.\n"
-	html := p.ConvertMicronToHTML(src)
-	fmt.Print(html)
-}
+```text
+Parse / RenderHTML / ParseWithDiagnostics / Lint
+RenderANSI / ParseIncremental / Builder
+ParseHeaderTags
+CollectFormFields / BuildRequestPayload
 ```
 
-For a light theme and proportional fonts (closer to some terminal themes):
+Header colors (leading lines, 3 or 6 hex digits):
+
+```text
+#!fg=RGB
+#!bg=RGB
+```
 
 ```go
-p := micron.Parser{DarkTheme: false, ForceMonospace: false}
+colors := micron.ParseHeaderTags(markup)
 html := p.ConvertMicronToHTML(markup)
 ```
 
-### Page header colors (optional)
-
-Leading lines of the form `#!fg=RGB` and `#!bg=RGB` (three or six hex digits per color) set default page foreground and background. You can read them without rendering via `ParseHeaderTags`, for example to style a surrounding shell or iframe:
+Form / link helpers:
 
 ```go
-markup := "#!fg=ccc\n#!bg=222\n\n> Section\nBody.\n"
-colors := micron.ParseHeaderTags(markup)
-// colors.FG, colors.BG — may be empty if not set
-_ = colors
-
-p := micron.Parser{DarkTheme: true, ForceMonospace: true}
-html := p.ConvertMicronToHTML(markup) // header tags are applied during conversion
-```
-
-### Link requests and form fields
-
-For applications that render HTML to the client and submit Micron-style links, `CollectFormFields` and `BuildRequestPayload` mirror the WASM helpers: turn a list of input snapshots into a field map, then combine with link `destination` and `fieldsSpec` (e.g. `*` for all fields, or `name|other`).
-
-```go
-inputs := []micron.FieldInput{
-	{Type: "text", Name: "user", Value: "alice"},
-	{Type: "checkbox", Name: "opts", Value: "1", Checked: true},
-	{Type: "radio", Name: "plan", Value: "pro", Checked: true},
-}
 fields := micron.CollectFormFields(inputs)
-
-payload := micron.BuildRequestPayload(
-	fields,
-	"/page/submit.mu`action=run|amount=10",
-	"user|plan",
-)
-// payload.Destination, payload.Fields, payload.RequestVars — use as needed (JSON tags on RequestPayload)
-_ = payload
+payload := micron.BuildRequestPayload(fields, dest, "user|plan")
 ```
 
 ## Performance
 
-Benchmarks use the **NomadNet guide** micron source from Micron-Parser-JS (`11248` input bytes).
+Corpus:
 
-| Implementation | Environment | Mean time / conversion | Notes |
-|----------------|---------------|------------------------|--------|
-| This package (Go) | `go test` native amd64 | ~0.86 ms | 10x `BenchmarkConvertNomadNetGuide` runs (pinned); ~0.82-0.91 ms/op, ~2.08 MB/op, 538 allocs/op |
-| This package (Go WASM) | Browser `bench.html` | ~1.68 ms | 10 runs (128 inner iterations); stdev ~0.025 ms; min/max ~1.65-1.72 ms; ~6.4 MiB/s |
-| Reference [micron-parser-js](https://github.com/RFnexus/micron-parser-js) | Browser `bench.html` | ~2.63 ms | 10 runs (64 inner iterations); stdev ~0.056 ms; min/max ~2.57-2.77 ms; ~4.1 MiB/s |
+```text
+micron/testdata/nomadnet_guide.mu
+```
 
-**WebAssembly:** The browser build uses the same Go code as the native benchmark, but timing includes JS/WASM call overhead and is strongly browser-dependent. It will not match the `go test` numbers above.
+| Implementation | Environment | Mean | Notes |
+|----------------|-------------|------|-------|
+| Go native | `go test` amd64 | ~0.37 ms | ~0.35-0.38 ms/op, ~0.30 MB/op, ~2006 allocs/op, ~85 MB/s |
+| Go WASM | browser `bench.html` | ~0.56 ms | 10 runs (512 inner iterations); stdev ~0.026 ms; min/max ~0.54-0.63 ms; ~19.2 MiB/s |
+| micron-parser-js | browser `bench.html` | ~3.54 ms | 10 runs (64 inner iterations); stdev ~0.11 ms; min/max ~3.41-3.78 ms; ~3.0 MiB/s |
+| Go WASM | Node + `wasm_exec.js` | ~1.42 ms | ~21.3 MiB/s (10 runs) |
+| micron-parser-js | Node + DOM stub | ~3.39 ms | ~9.0 MiB/s (10 runs) |
 
-**WASM vs reference JS (browser mean):** `1.57x` faster.
-
-**Reproduce**
+**WASM vs reference JS (browser mean):** `6.31x` faster.
 
 ```text
 make bench
 ```
 
-Runs native Go (`bench-go`, `-count=10`) and the Node script (`bench-js`). To summarize Go variance with [benchstat](https://pkg.go.dev/golang.org/x/perf/cmd/benchstat):
+Runs `bench-go`, `bench-js`, and `bench-wasm`. For the in-browser head-to-head: `make serve-web`, then open `/bench.html`.
 
-```text
-go test ./micron -bench=BenchmarkConvertNomadNetGuide -benchmem -count=10 | tee /tmp/go.txt
-benchstat /tmp/go.txt
-```
-
-## WASM demo
+## WASM
 
 ```text
 make wasm
+make serve-web
 ```
 
-Open `web/index.html` in a browser (local file or any static server).
-`make wasm` writes both `web/micron.wasm` and `web/wasm_exec.js`. These artifacts are generated into `web/` and are intentionally gitignored.
+Open http://127.0.0.1:8080/ (also playground.html, bench.html).
 
-### JavaScript API (globals)
+```text
+web/micron.wasm
+web/wasm_exec.js
+```
 
-After `wasm_exec.js` loads the module, the following functions are available on `globalThis` / `window`:
+Globals after load:
 
-| Symbol | Signature | Purpose |
-|--------|-----------|---------|
-| `micronConvert` | `(markup: string, darkTheme?: boolean, forceMonospace?: boolean) => string` | Render Micron source to an HTML string. Defaults match the demo: dark `true`, monospace `true`. |
-| `micronCollectFields` | `(rootSelector?: string) => string` | JSON string of form field values under `document.querySelector(rootSelector)` (default `#preview`). |
-| `micronResolveLink` | `(rootSelector?: string, destination?: string, fieldsSpec?: string) => string` | JSON payload for link navigation, using the same field collection rules as the Go helpers. |
+```text
+micronConvert(markup, darkTheme?, forceMonospace?) -> string
+micronLint(markup) -> string
+micronParse(markup, darkTheme?, forceMonospace?) -> string
+micronCollectFields(rootSelector?) -> string
+micronResolveLink(rootSelector?, destination?, fieldsSpec?) -> string
+```
 
-The WASM program registers these and then blocks on the Go scheduler (`select {}`); initialization is synchronous from the host perspective once instantiation completes.
+Optional demo hook: window.onMicronLink(payload, element).
+Preview root defaults to #preview.
 
-### Application hooks
+## Make
 
-- **`window.onMicronLink`** — Optional. If defined, the demo calls it when the user activates a rendered Micron link (`data-action="openNode"`). Receives `(payload: object, element: Element)` where `payload` is the JSON from `micronResolveLink`. Use this to route in-app navigation, logging, or analytics without forking the stock HTML.
-- **Preview container** — Host pages should keep a single preview root (e.g. `#preview`) so `micronCollectFields` and `micronResolveLink` resolve inputs consistently.
+```text
+make test
+make verify
+make lint
+make fuzz
+make bench
+make wasm
+```
 
-## Quality, verification and security
-
-- Unit tests and edge/smoke suites are in `micron/*_test.go`
-- **Regression corpus** — `micron/testdata/regressions/*.mu` with matching `.txt` expected visible fragments (add a case when fixing parser bugs)
-- Security tests cover HTML escaping and attribute escaping
-- Fuzz targets cover parser conversion and header parsing (regression markup is included as fuzz seed input)
-- Race/concurrency coverage is included in concurrent conversion tests
-- Goroutine leak guard checks repeated conversion paths
-- JS interop tests compare semantic output (visible text, links, fields) against `micron/testdata/micron-parser.js`
-- Monospace interop compares whitespace-compacted visible text (Go per-cell spans vs JS word groups)
-- WASM smoke test (`make test-wasm`) exercises `micronConvert` via Node + `wasm_exec.js`
-- Reference JS must match `web/static/vendor/micron-parser.js` (`make check-vendor-js` / `make sync-vendor-js`)
-- Benchmarks: `make bench` (native Go + reference JS, NomadNet corpus)
-- Property-based tests in `micron/property_test.go`
-- `make fuzz` runs every fuzz target in `micron/fuzz_test.go` (override duration with `FUZZTIME=30s`)
-- `make verify` runs vendor sync check, race tests, interop, wasm smoke, and fuzz
+make verify runs vendor check, fmt/lint/vet/gosec, race tests, JS + Python
+interop, wasm smoke, and fuzz.
 
 ## License
 

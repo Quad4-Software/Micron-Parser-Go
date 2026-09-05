@@ -1,47 +1,61 @@
 # Changelog
 
-All notable changes to this project are documented in this file. Dates use ISO 8601 (YYYY-MM-DD).
+Dates use YYYY-MM-DD.
 
-## [1.0.7] - 2026-08-31
+## [1.1.0] - 2026-09-05 [unreleased]
+
+### Added
+
+- Document IR: Parse, RenderHTML, ParseWithDiagnostics, Lint, source spans, and JSON export.
+- Builder helpers, incremental parse, and ANSI render for TUI hosts.
+- Dialect notes and conformance examples in spec/micron.txt.
+- Tree-sitter grammar under tree-sitter-micron/.
+- C shared library (make lib) with header in bindings/c/.
+- Language bindings for Python, Node, Rust, Java, C#, Ruby, PHP, Zig, Dart, Swift, and Perl.
+- Release packaging for multi-platform libmicron and binding artifacts.
+- CI bindings smoke (make bindings-test) and GitHub Pages workflow.
+- Playground: tabs, diagnostics panel, source color pickers for page and inline colors, and related editor tools.
+- Python oracle / semantic fingerprint tests against NomadNet-shaped output.
 
 ### Fixed
 
-- Cap nested `>` section depth at 16 so CSS `margin-inline-start` cannot grow without bound.
-- ForceMonospace no longer wraps Arabic Persian Hebrew and related scripts per character so letters keep joining and RTL order works. Root output uses `dir="auto"` and section indent uses logical `margin-inline-start`.
+- Nested section depth capped at 16.
+- ForceMonospace no longer breaks Arabic, Persian, Hebrew, and related scripts (dir=auto, logical section indent).
+
+### Changed
+
+- NomadNet Python is the primary dialect authority; micron-parser-js is secondary interop.
+- Go toolchain requirement raised to 1.26.5+.
+- ConvertMicronToHTML streams HTML again (no Document IR on the hot path).
+- ForceMonospace matches micron-parser-js wrapWord: plain ASCII stays bare, Mu-mnt only for specials and non-ASCII cells while complex scripts stay unsplintered.
+- Benchmarks updated: native ~0.37 ms; browser WASM ~0.56 ms vs JS ~3.54 ms (~6.31x); Node WASM ~1.42 ms vs JS ~3.39 ms.
 
 ## [1.0.6] - 2026-07-04
 
 ### Fixed
 
-- Backslash before `[` is handled correctly in formatting mode so relay-style timestamps such as `\[04.07.2026 02:55]:` render as `[04.07.2026 02:55]:` without a visible escape character.
-- Reference JavaScript parser aligned for the same backslash rules in text and formatting modes.
+- Backslash before [ in formatting mode (relay-style timestamps).
+- Matching backslash rules in the reference JS parser.
 
 ### Added
 
-- Regression corpus under `micron/testdata/regressions/` with table-driven tests for relay timestamps, figlet backslashes, and XSS escaping.
-- WASM smoke test (`make test-wasm`) exercising `micronConvert` via Node and `wasm_exec.js`.
-- `make check-vendor-js` / `make sync-vendor-js` to keep `micron/testdata/micron-parser.js` and `web/static/vendor/micron-parser.js` in sync.
-- `make verify` for a single local QA pass (vendor check, race tests, interop, wasm smoke, fuzz).
-- Release workflow gate: tests run before WASM artifacts are published.
-- CI: wasm smoke, vendor JS diff in lint job, weekly scheduled fuzz (120s).
+- Regression corpus, WASM smoke (make test-wasm), vendor JS sync checks, and make verify.
+- Stronger CI gates before release artifacts publish.
 
 ### Changed
 
-- Go toolchain requirement raised to 1.26.4.
-- Module path is now the local `micron-parser-go` (no remote git host in the import path).
-- JS interop covers all theme and monospace combinations using semantic visible-text comparison.
-- README quality section documents regression corpus, wasm smoke, and verify targets.
+- Module path is local micron-parser-go.
+- JS interop uses semantic visible-text comparison across theme and monospace modes.
 
 ## [1.0.1] - 2026-05-01
 
 ### Fixed
 
-- Line parsing applies monospace formatting only when `ForceMonospace` is set.
+- Monospace formatting only when ForceMonospace is set.
 
 ### Changed
 
-- Reduced allocations by refactoring color and HTML handling in the `micron` package.
-- README updates.
+- Leaner color and HTML handling in the micron package.
 
 ## [1.0.0] - 2026-04-30
 
