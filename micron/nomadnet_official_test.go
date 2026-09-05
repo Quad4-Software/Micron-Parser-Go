@@ -44,8 +44,8 @@ func TestNomadNetGuideOfficial(t *testing.T) {
 	for _, m := range matrix {
 		p := &Parser{DarkTheme: m.dark, ForceMonospace: m.mono}
 		out := p.ConvertMicronToHTML(string(src))
-		if !strings.HasPrefix(out, `<div dir="auto" style="line-height:1.5;`) {
-			t.Fatalf("dark=%v mono=%v: missing container prefix", m.dark, m.mono)
+		if !strings.Contains(out, `class="Mu-root"`) || !strings.Contains(out, `dir="auto"`) {
+			t.Fatalf("dark=%v mono=%v: missing Mu-root container", m.dark, m.mono)
 		}
 		if !strings.HasSuffix(out, `</div>`) {
 			t.Fatalf("dark=%v mono=%v: missing closing div", m.dark, m.mono)
@@ -62,10 +62,10 @@ func TestNomadNetGuideOfficial(t *testing.T) {
 // metadata (anchor destinations, link field-specs, input names and types).
 //
 // Whole-text equality is not asserted on this fixture: micron-parser-js uses
-// innerHTML+= for literal text, so raw "<x`y>" characters in a literal block
-// become real HTML elements (which DOMPurify or the tag stripper then
-// removes), whereas the Go renderer always escapes them. Both behaviours are
-// safe, but the visible text after tag-strip differs by design.
+// innerHTML+= for literal text, so raw angle-bracket text with backticks in a
+// literal block becomes real HTML elements (which DOMPurify or the tag stripper
+// then removes), whereas the Go renderer always escapes them. Both behaviors
+// are safe, but the visible text after tag-strip differs by design.
 func TestNomadNetGuideOfficialMatchesJS(t *testing.T) {
 	if _, err := exec.LookPath("node"); err != nil {
 		t.Skip("node not found")

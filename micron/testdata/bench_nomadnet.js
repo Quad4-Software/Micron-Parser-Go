@@ -73,7 +73,7 @@ const min = Math.min(...perRunNsPerOp);
 const max = Math.max(...perRunNsPerOp);
 const mibPerSec = inputBytes / (m / 1e9) / (1024 * 1024);
 
-console.log("reference JS (micron-parser.js) — NomadNet guide corpus");
+console.log("reference JS (micron-parser.js) - NomadNet guide corpus");
 console.log("  input: " + inputBytes + " B");
 console.log("  parser: MicronParser(" + dark + ", " + mono + ")");
 console.log("  inner iterations per measured run: " + innerIter);

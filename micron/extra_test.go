@@ -10,9 +10,13 @@ import (
 
 func TestForceMonospaceSpans(t *testing.T) {
 	p := Parser{DarkTheme: true, ForceMonospace: true}
-	out := p.ConvertMicronToHTML("hi there")
-	if !strings.Contains(out, `class="Mu-mws"`) || !strings.Contains(out, `class="Mu-mnt"`) {
-		t.Fatal(out)
+	plain := p.ConvertMicronToHTML("hi there")
+	if strings.Contains(plain, `class="Mu-mnt"`) || strings.Contains(plain, `class="Mu-mws"`) {
+		t.Fatalf("plain ASCII must stay bare under ForceMonospace: %s", plain)
+	}
+	special := p.ConvertMicronToHTML("a<b")
+	if !strings.Contains(special, `class="Mu-mws"`) || !strings.Contains(special, `class="Mu-mnt"`) {
+		t.Fatalf("HTML-special ASCII must use Mu-mws/Mu-mnt: %s", special)
 	}
 }
 

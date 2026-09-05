@@ -13,7 +13,7 @@ func TestEdgeLargeInputNoPanic(t *testing.T) {
 	chunk := strings.Repeat("abcd `!x` ", 2048)
 	in := strings.Join([]string{"> title", chunk, "-=", "`B333", chunk, "`b"}, "\n")
 	out := p.ConvertMicronToHTML(in)
-	if len(out) == 0 {
+	if out == "" {
 		t.Fatal("expected non-empty output")
 	}
 }
@@ -111,7 +111,7 @@ func TestBareHeadingIssue25Pattern(t *testing.T) {
 		t.Fatalf("expected bare heading to set section indent for subsequent content: %s", out)
 	}
 
-	brCount := strings.Count(out, "<br>")
+	brCount := strings.Count(out, "<br")
 	if brCount != 2 {
 		t.Fatalf("expected 2 <br> (one from content heading, one from empty line), got %d: %s", brCount, out)
 	}
@@ -206,8 +206,11 @@ func TestMixedLatinArabicMonospace(t *testing.T) {
 	if !strings.Contains(out, "\u0633\u0644\u0627\u0645") {
 		t.Fatalf("expected Persian run preserved: %s", out)
 	}
-	if countMuMnt(out) != 2 {
-		t.Fatalf("want Mu-mnt only for 'h' and 'i', got %d in %s", countMuMnt(out), out)
+	if countMuMnt(out) != 0 {
+		t.Fatalf("Latin stays bare and Persian stays unsplintered, want 0 Mu-mnt got %d in %s", countMuMnt(out), out)
+	}
+	if !strings.Contains(out, `class="Mu-mws"`) {
+		t.Fatalf("mixed Latin/Persian word must use Mu-mws: %s", out)
 	}
 }
 

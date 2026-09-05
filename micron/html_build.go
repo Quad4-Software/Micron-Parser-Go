@@ -9,14 +9,13 @@ import (
 	"strings"
 )
 
-func appendQuotedHTMLStyleAttr(b *strings.Builder, st Style, defaultBG string) bool {
+func appendQuotedHTMLStyleAttr(b *strings.Builder, st Style, defaultBG string) {
 	if !hasAnyStyle(st, defaultBG) {
-		return false
+		return
 	}
 	b.WriteString(` style="`)
 	appendStyleAttr(b, st, defaultBG)
 	b.WriteByte('"')
-	return true
 }
 
 func appendStyledSpanOpen(b *strings.Builder, st Style, defaultBG string) bool {
@@ -71,7 +70,7 @@ func (p *Parser) appendOutput(b *strings.Builder, parts []linePart, s *State) {
 			case pr.link != nil:
 				p.writeLink(b, pr.link, s)
 			default:
-				p.writePartial(b, pr.partial, s)
+				p.writePartial(b, pr.partial, s, 0)
 			}
 			continue
 		}
@@ -88,11 +87,7 @@ func (p *Parser) appendOutput(b *strings.Builder, parts []linePart, s *State) {
 		if pr.html != "" {
 			b.WriteString(pr.html)
 		} else if p.ForceMonospace {
-			if s.Literal {
-				p.appendForceMonospace(b, pr.text)
-			} else {
-				p.appendSplitAtSpaces(b, pr.text)
-			}
+			p.appendSplitAtSpaces(b, pr.text)
 		} else {
 			appendHTMLText(b, pr.text)
 		}
@@ -216,8 +211,10 @@ func (p *Parser) writeLink(b *strings.Builder, lk *Link, s *State) {
 	b.WriteString(`</a>`)
 }
 
-func (p *Parser) writePartial(b *strings.Builder, pt *Partial, s *State) {
-	b.WriteString(`<div class="Mu-partial" data-partial-url="`)
+func (p *Parser) writePartial(b *strings.Builder, pt *Partial, s *State, srcLine int) {
+	b.WriteString(`<div class="Mu-partial"`)
+	writeDataMuLine(b, srcLine)
+	b.WriteString(` data-partial-url="`)
 	b.WriteString(htmlAttr(pt.URL))
 	b.WriteString(`" data-partial-destination="`)
 	b.WriteString(htmlAttr(pt.Destination))

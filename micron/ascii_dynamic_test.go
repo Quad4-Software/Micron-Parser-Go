@@ -8,7 +8,6 @@ import (
 	"os/exec"
 	"strings"
 	"testing"
-	"unicode/utf8"
 )
 
 func randomPlainMicronLine(rng *rand.Rand, maxLen int) string {
@@ -47,8 +46,12 @@ func TestPlainLinePreservesBackslashesFiglet(t *testing.T) {
 	row := `\_______/`
 	out2 := p.ConvertMicronToHTML(row)
 	afterLeadEscape := row[1:]
-	if countMuMnt(out2) != utf8.RuneCountInString(afterLeadEscape) {
-		t.Fatalf("Mu-mnt count mismatch for %q (content after line-leading \\)", row)
+	if !strings.Contains(out2, afterLeadEscape) {
+		t.Fatalf("want preserved text %q in %s", afterLeadEscape, out2)
+	}
+	// Plain printable ASCII needs no Mu-mnt cells (micron-parser-js wrapWord).
+	if countMuMnt(out2) != 0 {
+		t.Fatalf("plain ASCII figlet must not use Mu-mnt, got %d in %s", countMuMnt(out2), out2)
 	}
 }
 
@@ -70,10 +73,16 @@ func TestMonospaceMuMntCountDynamicPlainASCII(t *testing.T) {
 			ForceMonospace: true,
 		}
 		out := p.ConvertMicronToHTML(line)
-		want := utf8.RuneCountInString(line)
+		want := 0
+		for i := range len(line) {
+			c := line[i]
+			if c == '&' || c == '<' || c == '>' || c < 0x20 || c >= 0x7F {
+				want++
+			}
+		}
 		got := countMuMnt(out)
 		if got != want {
-			t.Fatalf("DarkTheme=%v line=%q runes=%d Mu-mnt=%d\n%s", p.DarkTheme, line, want, got, out)
+			t.Fatalf("DarkTheme=%v line=%q wantMu=%d Mu-mnt=%d\n%s", p.DarkTheme, line, want, got, out)
 		}
 	}
 }
@@ -116,19 +125,14 @@ func TestMonospaceMuMntMultilineJoinConsistent(t *testing.T) {
 	rng := rand.New(rand.NewSource(44033))
 	p := Parser{DarkTheme: true, ForceMonospace: true}
 	lines := make([]string, 16)
-	sumRunes := 0
 	sumSoloMu := 0
 	for i := range lines {
 		lines[i] = randomPlainMicronLine(rng, 64)
-		sumRunes += utf8.RuneCountInString(lines[i])
 		sumSoloMu += countMuMnt(p.ConvertMicronToHTML(lines[i]))
 	}
 	doc := strings.Join(lines, "\n")
 	combined := p.ConvertMicronToHTML(doc)
 	got := countMuMnt(combined)
-	if sumRunes != sumSoloMu {
-		t.Fatalf("single-line Mu-mnt sum %d != rune sum %d", sumSoloMu, sumRunes)
-	}
 	if got != sumSoloMu {
 		t.Fatalf("combined Mu-mnt %d != per-line sum %d\n%s", got, sumSoloMu, combined)
 	}

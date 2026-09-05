@@ -74,9 +74,9 @@ func TestInteropMonospaceVisibleText(t *testing.T) {
 		p := &Parser{DarkTheme: tc.Dark, ForceMonospace: true}
 		goOut := p.ConvertMicronToHTML(tc.Markup)
 		jsOut := jsOutputs[i]
-		if visibleTextForInterop(goOut, true) != visibleTextForInterop(jsOut, true) {
+		if visibleTextForInterop(goOut) != visibleTextForInterop(jsOut) {
 			t.Fatalf("mono visible text mismatch on %s\nGo: %q\nJS: %q",
-				tc.Name, visibleTextForInterop(goOut, true), visibleTextForInterop(jsOut, true))
+				tc.Name, visibleTextForInterop(goOut), visibleTextForInterop(jsOut))
 		}
 	}
 }
@@ -183,17 +183,13 @@ func sigsEqual(a, b htmlSig) bool {
 func interopSignatureFromHTML(in string, mono bool) htmlSig {
 	sig := signatureFromHTML(in)
 	if mono {
-		sig.TextNormalized = visibleTextForInterop(in, true)
+		sig.TextNormalized = visibleTextForInterop(in)
 	}
 	return sig
 }
 
-func visibleTextForInterop(html string, mono bool) string {
-	txt := visibleTextFromHTML(html)
-	if mono {
-		return strings.ReplaceAll(txt, " ", "")
-	}
-	return txt
+func visibleTextForInterop(htmlOut string) string {
+	return strings.ReplaceAll(visibleTextFromHTML(htmlOut), " ", "")
 }
 
 func interopSemanticallyEqual(goOut, jsOut string, mono bool) bool {

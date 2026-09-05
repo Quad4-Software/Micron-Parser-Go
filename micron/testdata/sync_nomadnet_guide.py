@@ -1,8 +1,8 @@
 """
 sync_nomadnet_guide.py extracts TOPIC_MARKUP from the upstream NomadNet
 Guide.py without importing it (so urwid / RNS / nomadnet need not be
-installed). Result is written to nomadnet_guide_official.mu next to this
-script.
+installed). Result is written to nomadnet_guide_official.mu and mirrored to
+the playground/bench seed copies.
 
 Usage:
     python3 sync_nomadnet_guide.py [path/to/NomadNet]
@@ -16,7 +16,6 @@ snapshot when NomadNet upstream changes.
 """
 
 import argparse
-import ast
 import os
 import sys
 from pathlib import Path
@@ -26,25 +25,26 @@ DEFAULT_NOMADNET_DIR = "/run/media/user1/projects/Reticulum/NomadNet"
 
 
 def extract_topic_markup(guide_path: Path) -> str:
+    """Evaluate TOPIC_MARKUP the same way Guide.py builds it at import time.
+
+    NomadNet assigns the main body, then appends an escaped self-copy inside a
+    literal block (TOPIC_MARKUP.replace), then Closing Remarks. String-slicing
+    the assignment alone drops that self-embed.
+    """
     source = guide_path.read_text(encoding="utf-8")
-    tree = ast.parse(source, filename=str(guide_path))
-    pieces: list[str] = []
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Assign):
-            for target in node.targets:
-                if isinstance(target, ast.Name) and target.id == "TOPIC_MARKUP":
-                    if not isinstance(node.value, ast.Constant) or not isinstance(node.value.value, str):
-                        raise SystemExit("expected TOPIC_MARKUP to be a string literal assignment")
-                    pieces.append(node.value.value)
-        elif isinstance(node, ast.AugAssign):
-            if isinstance(node.target, ast.Name) and node.target.id == "TOPIC_MARKUP":
-                if isinstance(node.value, ast.Constant) and isinstance(node.value.value, str):
-                    pieces.append(node.value.value)
-                else:
-                    pieces.append("")
-    if not pieces:
-        raise SystemExit("TOPIC_MARKUP not found in Guide.py")
-    return "".join(pieces)
+    start = source.find("TOPIC_MARKUP =")
+    if start < 0:
+        raise SystemExit("TOPIC_MARKUP assignment not found in Guide.py")
+    end = source.find("\nTOPICS =", start)
+    if end < 0:
+        raise SystemExit("TOPICS dict not found after TOPIC_MARKUP in Guide.py")
+    block = source[start:end]
+    ns: dict[str, object] = {}
+    exec(block, {"__builtins__": {}}, ns)
+    markup = ns.get("TOPIC_MARKUP")
+    if not isinstance(markup, str) or markup == "":
+        raise SystemExit("TOPIC_MARKUP did not evaluate to a non-empty string")
+    return markup
 
 
 def main() -> int:
@@ -63,9 +63,18 @@ def main() -> int:
         return 1
 
     markup = extract_topic_markup(guide_path)
-    out_path = Path(__file__).with_name("nomadnet_guide_official.mu")
-    out_path.write_text(markup, encoding="utf-8")
-    print(f"wrote {out_path} ({len(markup.encode('utf-8'))} bytes)")
+    data = markup.encode("utf-8")
+    testdata = Path(__file__).resolve().parent
+    repo = testdata.parent.parent
+    outputs = [
+        testdata / "nomadnet_guide_official.mu",
+        testdata / "nomadnet_guide.mu",
+        repo / "web" / "static" / "data" / "nomadnet_guide.mu",
+    ]
+    for out_path in outputs:
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_bytes(data)
+        print(f"wrote {out_path} ({len(data)} bytes)")
     return 0
 
 

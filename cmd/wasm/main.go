@@ -61,6 +61,40 @@ func main() {
 	js.Global().Set("micronConvert", convert)
 	js.Global().Set("micronCollectFields", collectFields)
 	js.Global().Set("micronResolveLink", resolveLink)
+	lint := js.FuncOf(func(this js.Value, args []js.Value) any {
+		markup := ""
+		if len(args) > 0 {
+			markup = args[0].String()
+		}
+		p := micron.Parser{DarkTheme: true, ForceMonospace: true}
+		raw, err := micron.DiagnosticsJSON(p.Lint(markup))
+		if err != nil {
+			return "[]"
+		}
+		return string(raw)
+	})
+	parseJSON := js.FuncOf(func(this js.Value, args []js.Value) any {
+		markup := ""
+		if len(args) > 0 {
+			markup = args[0].String()
+		}
+		dark := true
+		if len(args) > 1 {
+			dark = args[1].Bool()
+		}
+		mono := true
+		if len(args) > 2 {
+			mono = args[2].Bool()
+		}
+		p := micron.Parser{DarkTheme: dark, ForceMonospace: mono}
+		raw, err := p.Parse(markup).DocumentJSON()
+		if err != nil {
+			return "null"
+		}
+		return string(raw)
+	})
+	js.Global().Set("micronLint", lint)
+	js.Global().Set("micronParse", parseJSON)
 	select {}
 }
 

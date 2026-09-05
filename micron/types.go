@@ -3,14 +3,16 @@
 
 package micron
 
+import "strings"
+
 // Parser configures Micron-to-HTML conversion. A zero Parser is usable.
 // Set DarkTheme and ForceMonospace for light/dark defaults and monospace layout.
 // Parser values are safe for concurrent use by multiple goroutines.
 type Parser struct {
 	// DarkTheme selects default palette when the document does not set #!fg / #!bg.
 	DarkTheme bool
-	// ForceMonospace wraps Latin and other simple glyphs in monospace cell spans.
-	// Arabic Persian Hebrew and related scripts stay as continuous runs so letters join.
+	// ForceMonospace applies micron-parser-js monospace wrapping: plain ASCII
+	// stays bare, while complex scripts and HTML-special bytes use Mu-mws / Mu-mnt.
 	ForceMonospace bool
 }
 
@@ -46,6 +48,8 @@ type State struct {
 	DefaultFG      string
 	DefaultBG      string
 	styleAttrMap   map[stateStyleKey]string
+	partsBuf       []linePart
+	partBuf        strings.Builder
 }
 
 type stateStyleKey struct {

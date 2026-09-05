@@ -8,8 +8,8 @@ import "strings"
 // PageColors holds optional page-level colors from leading #!fg= / #!bg=
 // directives (three- or six-digit hex when valid).
 type PageColors struct {
-	FG string
-	BG string
+	FG string `json:"fg"`
+	BG string `json:"bg"`
 }
 
 // ParseHeaderTags reads leading #!fg= and #!bg= lines at the start of markup,

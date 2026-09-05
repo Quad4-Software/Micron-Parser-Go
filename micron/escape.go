@@ -8,21 +8,25 @@ import (
 	"strings"
 )
 
-// stripASCIIControls removes ASCII control characters (U+0000–U+001F).
+// stripASCIIControls removes ASCII control characters (U+0000-U+001F).
 // html.EscapeString does not escape NUL or line breaks. Dropping C0 controls
 // keeps visible text and attribute values predictable.
 func stripASCIIControls(s string) string {
-	if strings.IndexFunc(s, func(r rune) bool { return r < 0x20 }) < 0 {
-		return s
-	}
-	var b strings.Builder
-	b.Grow(len(s))
-	for _, r := range s {
-		if r >= 0x20 {
-			b.WriteRune(r)
+	for i := range len(s) {
+		if s[i] >= 0x20 {
+			continue
 		}
+		var b strings.Builder
+		b.Grow(len(s))
+		b.WriteString(s[:i])
+		for j := i; j < len(s); j++ {
+			if s[j] >= 0x20 {
+				b.WriteByte(s[j])
+			}
+		}
+		return b.String()
 	}
-	return b.String()
+	return s
 }
 
 func htmlText(s string) string {
@@ -32,7 +36,7 @@ func htmlText(s string) string {
 func appendHTMLText(b *strings.Builder, s string) {
 	s = stripASCIIControls(s)
 	start := 0
-	for i := 0; i < len(s); i++ {
+	for i := range len(s) {
 		var esc string
 		switch s[i] {
 		case '&':

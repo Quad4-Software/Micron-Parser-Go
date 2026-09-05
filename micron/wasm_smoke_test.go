@@ -4,6 +4,7 @@
 package micron
 
 import (
+	"bytes"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -21,7 +22,7 @@ func TestReferenceJSSyncedWithVendor(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(refBytes) != string(vendorBytes) {
+	if !bytes.Equal(refBytes, vendorBytes) {
 		t.Fatalf("testdata/micron-parser.js and web/static/vendor/micron-parser.js differ; run: make sync-vendor-js")
 	}
 }

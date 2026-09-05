@@ -83,11 +83,6 @@ func loadRegressionCases(t *testing.T) []struct {
 	return cases
 }
 
-func regressionMarkupSeeds(t *testing.T) []string {
-	t.Helper()
-	return regressionMarkupSeedsStatic()
-}
-
 func TestRegressionCorpus(t *testing.T) {
 	for _, tc := range loadRegressionCases(t) {
 		t.Run(tc.name, func(t *testing.T) {
