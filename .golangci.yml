@@ -1,0 +1,150 @@
+# Copyright Quad4 2026
+# SPDX-License-Identifier: 0BSD
+
+version: "2"
+
+run:
+  tests: true
+
+linters:
+  default: standard
+  enable:
+    - asciicheck
+    - bidichk
+    - copyloopvar
+    - durationcheck
+    - errorlint
+    - forcetypeassert
+    - gocheckcompilerdirectives
+    - gocritic
+    - gosec
+    - ineffassign
+    - intrange
+    - misspell
+    - modernize
+    - nakedret
+    - nilerr
+    - nolintlint
+    - predeclared
+    - revive
+    - unconvert
+    - unparam
+  settings:
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - style
+        - performance
+      disabled-checks:
+        - hugeParam
+        - rangeValCopy
+        - whyNoLint
+        - ifElseChain
+        - unnamedResult
+        - dupImport
+        - uncheckedInlineErr
+    gosec:
+      excludes:
+        - G115
+    misspell:
+      locale: US
+    nakedret:
+      max-func-lines: 0
+    nolintlint:
+      require-explanation: true
+      require-specific: true
+    revive:
+      confidence: 0.8
+      severity: warning
+      rules:
+        - name: exported
+          arguments:
+            - checkPrivateReceivers
+            - disableStutteringCheck
+            - disableChecksOnConstants
+            - disableChecksOnFunctions
+            - disableChecksOnMethods
+            - disableChecksOnTypes
+            - disableChecksOnVariables
+        - name: argument-limit
+          arguments: [12]
+        - name: atomic
+        - name: bare-return
+        - name: blank-imports
+        - name: bool-literal-in-expr
+        - name: confusing-naming
+        - name: confusing-results
+        - name: constant-logical-expr
+        - name: context-as-argument
+        - name: context-keys-type
+        - name: deep-exit
+        - name: duplicated-imports
+        - name: early-return
+        - name: empty-block
+        - name: error-naming
+        - name: error-return
+        - name: error-strings
+        - name: errorf
+        - name: if-return
+        - name: increment-decrement
+        - name: indent-error-flow
+        - name: modifies-parameter
+        - name: modifies-value-receiver
+        - name: range
+        - name: receiver-naming
+        - name: redefines-builtin-id
+        - name: string-format
+        - name: struct-tag
+        - name: superfluous-else
+        - name: time-naming
+        - name: unexported-return
+        - name: unnecessary-stmt
+        - name: unreachable-code
+        - name: var-declaration
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - path: _test\.go
+        linters:
+          - gosec
+          - dupl
+      - path: cmd/libmicron/
+        linters:
+          - nakedret
+          - gocritic
+      - path: micron/split\.go
+        text: "add-constant"
+        linters:
+          - revive
+      - path: _test\.go
+        text: "add-constant"
+        linters:
+          - revive
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+      - bindings$
+      - ^examples/
+      - ^bindings/
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    gofmt:
+      simplify: true
+  exclusions:
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+      - bindings$
+      - ^examples/
+      - ^bindings/
