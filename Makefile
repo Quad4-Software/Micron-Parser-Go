@@ -10,6 +10,16 @@ DIST := dist
 LIB_NAME := libmicron
 UNAME_S := $(shell uname -s 2>/dev/null || echo unknown)
 
+# Reticulum / rngit dual-push origin (GitHub fetch, GitHub+RNS push).
+RNS_DEST ?= 06a54b505bb67b25ef3f8097e8001edc
+RNS_GROUP ?= public
+RNS_REPO ?= micron-parser-go
+RNS_REMOTE ?= rns://$(RNS_DEST)/$(RNS_GROUP)/$(RNS_REPO)
+GH_REPO ?= Quad4-Software/Micron-Parser-Go
+CHANGELOG ?= CHANGELOG.md
+# TAG required for rngit-release / rngit-notes / rngit-push-tag (e.g. TAG=v1.1.0).
+TAG ?=
+
 ifeq ($(OS),Windows_NT)
   LIB_FILE := $(LIB_NAME).dll
 else ifneq (,$(findstring MINGW,$(UNAME_S)))
@@ -24,7 +34,7 @@ else
   LIB_FILE := $(LIB_NAME).so
 endif
 
-.PHONY: all test test-race test-smoke test-interop test-interop-python test-wasm fuzz wasm serve-web lib lib-install bindings-test clean cover bench bench-go bench-js bench-wasm sync-vendor-js check-vendor-js verify fmt fix lint lint-gosec vet
+.PHONY: all test test-race test-smoke test-interop test-interop-python test-wasm fuzz wasm serve-web lib lib-install bindings-test clean cover bench bench-go bench-js bench-wasm sync-vendor-js check-vendor-js verify fmt fix lint lint-gosec vet rngit-notes rngit-push rngit-push-tag rngit-release rngit-release-local rngit-list
 
 all: check-vendor-js test wasm
 
@@ -190,3 +200,35 @@ bindings-test: lib
 clean:
 	rm -f $(WASM_OUT) $(WASM_JS) coverage.out coverage.html
 	rm -rf $(DIST)
+
+# Print CHANGELOG section for TAG (strips leading v).
+rngit-notes:
+	@test -n "$(TAG)" || (echo "set TAG=vX.Y.Z" >&2; exit 2)
+	@./scripts/changelog-entry.sh "$(TAG)" "$(CHANGELOG)"
+
+# Push current branch to dual-push origin (GitHub + RNS).
+rngit-push:
+	git push origin HEAD
+
+# Push TAG to dual-push origin. Example: make rngit-push-tag TAG=v1.1.0
+rngit-push-tag:
+	@test -n "$(TAG)" || (echo "set TAG=vX.Y.Z" >&2; exit 2)
+	git push origin "refs/tags/$(TAG)"
+
+# Publish rngit release for TAG using GitHub release assets + CHANGELOG notes.
+# Example: make rngit-release TAG=v1.1.0
+rngit-release:
+	@test -n "$(TAG)" || (echo "set TAG=vX.Y.Z" >&2; exit 2)
+	RNS_REMOTE="$(RNS_REMOTE)" GH_REPO="$(GH_REPO)" CHANGELOG="$(CHANGELOG)" \
+		./scripts/rngit-release.sh "$(TAG)"
+
+# Same as rngit-release but upload from a local directory (default: dist).
+# Example: make rngit-release-local TAG=v1.1.0 ARTIFACTS=./dist
+ARTIFACTS ?= $(DIST)
+rngit-release-local:
+	@test -n "$(TAG)" || (echo "set TAG=vX.Y.Z" >&2; exit 2)
+	RNS_REMOTE="$(RNS_REMOTE)" CHANGELOG="$(CHANGELOG)" \
+		./scripts/rngit-release.sh "$(TAG)" "$(ARTIFACTS)"
+
+rngit-list:
+	rngit release "$(RNS_REMOTE)" list
