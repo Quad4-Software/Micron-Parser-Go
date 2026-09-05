@@ -3,7 +3,7 @@
 
 [package]
 name = "micron-sys"
-version = "1.0.7"
+version = "1.1.0"
 edition = "2021"
 license = "0BSD"
 description = "Low-level FFI bindings to libmicron"

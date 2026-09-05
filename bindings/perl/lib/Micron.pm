@@ -11,7 +11,7 @@ use File::Spec;
 use JSON::PP qw(decode_json encode_json);
 
 our @EXPORT_OK = qw(convert parse_header_tags collect_form_fields build_request_payload);
-our $VERSION = '1.0.7';
+our $VERSION = '1.1.0';
 
 my $ffi;
 my $ready;

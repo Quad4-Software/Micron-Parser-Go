@@ -12,7 +12,7 @@ class BinaryDistribution(Distribution):
 
 setup(
     name="micron-parser",
-    version="1.0.7",
+    version="1.1.0",
     description="Micron markup parser and HTML renderer (libmicron bindings)",
     license="0BSD",
     packages=["micron"],

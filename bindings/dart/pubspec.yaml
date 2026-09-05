@@ -3,7 +3,7 @@
 
 name: micron
 description: Micron markup parser and HTML renderer (libmicron bindings)
-version: 1.0.7
+version: 1.1.0
 repository: https://github.com/Quad4-Software/micron-parser-go
 environment:
   sdk: ^3.0.0
