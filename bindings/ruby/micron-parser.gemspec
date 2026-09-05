@@ -4,7 +4,7 @@
 
 Gem::Specification.new do |spec|
   spec.name          = "micron-parser"
-  spec.version       = "1.0.7"
+  spec.version       = "1.1.0"
   spec.authors       = ["Quad4"]
   spec.summary       = "Micron markup parser and HTML renderer (libmicron bindings)"
   spec.license       = "0BSD"

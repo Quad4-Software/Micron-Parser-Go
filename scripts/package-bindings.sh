@@ -39,9 +39,19 @@ cp "${LIB_SRC}" "${PY_PKG}/${LIB_NAME}"
   VENV="${DIST}/.venv-wheel"
   if [[ ! -d "${VENV}" ]]; then
     python3 -m venv "${VENV}"
-    "${VENV}/bin/pip" install --quiet wheel setuptools
   fi
-  "${VENV}/bin/python" setup.py bdist_wheel --dist-dir "${OUT}" >/dev/null
+  if [[ -x "${VENV}/bin/python" ]]; then
+    VENV_PY="${VENV}/bin/python"
+    VENV_PIP="${VENV}/bin/pip"
+  elif [[ -x "${VENV}/Scripts/python.exe" ]]; then
+    VENV_PY="${VENV}/Scripts/python.exe"
+    VENV_PIP="${VENV}/Scripts/pip.exe"
+  else
+    echo "venv python missing under ${VENV}" >&2
+    exit 1
+  fi
+  "${VENV_PIP}" install --quiet wheel setuptools
+  "${VENV_PY}" setup.py bdist_wheel --dist-dir "${OUT}" >/dev/null
 )
 rm -f "${PY_PKG}/libmicron.so" "${PY_PKG}/libmicron.dylib" "${PY_PKG}/libmicron.dll"
 shopt -s nullglob
@@ -93,7 +103,7 @@ cp "${LIB_SRC}" "${CS_NATIVE}/${RID}/native/${LIB_NAME}"
 if command -v dotnet >/dev/null 2>&1; then
   (
     cd "${ROOT}/bindings/csharp"
-    dotnet pack -c Release -o "${OUT}" -p:PackageVersion=1.0.7
+    dotnet pack -c Release -o "${OUT}" -p:PackageVersion=1.1.0
     shopt -s nullglob
     for nupkg in "${OUT}"/Quad4.Micron*.nupkg; do
       mv "${nupkg}" "${OUT}/Quad4.Micron-${PLATFORM}.nupkg"
