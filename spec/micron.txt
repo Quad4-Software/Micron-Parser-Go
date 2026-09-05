@@ -1,0 +1,93 @@
+# Micron dialect specification (NomadNet)
+
+## Authority
+
+1. Primary: NomadNet Python (`MicronParser.py`, `Guide.py`)
+2. Secondary: micron-parser-js (web HTML interop only)
+
+When Guide and MicronParser.py disagree, follow Guide for author-facing meaning
+and document parser quirks. When Go/JS disagree with Python, prefer Python.
+
+HTML escaping and control-character stripping are Go host security requirements.
+They may differ from NomadNet's Urwid terminal path without changing dialect meaning.
+
+Stock `MicronParser.markup_to_attrmaps` builds Urwid widgets and needs NomadNet UI
+deps. Conformance oracles use a semantic fingerprint (sections, links, fields,
+partials, headers), not AttrMap trees. See `micron/testdata/python_oracle.py`.
+
+## Modes
+
+- compat (default): silent recovery, NomadNet-compatible omit-or-text behavior
+- strict: collect diagnostics via ParseWithDiagnostics / Lint
+
+## Conformance examples
+
+Examples use the CommonMark-style fence. The Go test driver in
+`micron/spec_test.go` loads this file.
+
+```````````````````````` example
+hello
+.
+{"blocks":1}
+````````````````````````
+
+```````````````````````` example
+> Title
+body
+.
+{"sections":[1]}
+````````````````````````
+
+```````````````````````` example
+#!fg=abc
+#!bg=123
+
+Hi
+.
+{"headers":{"fg":"abc","bg":"123"}}
+````````````````````````
+
+```````````````````````` example
+`[label`page.mu]
+.
+{"links":1}
+````````````````````````
+
+```````````````````````` example
+`<name`value>
+.
+{"fields":1}
+````````````````````````
+
+```````````````````````` example
+`{partial.mu}
+.
+{"partials":1}
+````````````````````````
+
+```````````````````````` example
+-
+.
+{"hr":1}
+````````````````````````
+
+```````````````````````` example
+# comment
+visible
+.
+{"blocks":1}
+````````````````````````
+
+```````````````````````` example
+`=
+literal `x`
+`=
+.
+{"literal_ok":true}
+````````````````````````
+
+```````````````````````` example
+>> Nested
+.
+{"sections":[2]}
+````````````````````````

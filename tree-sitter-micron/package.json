@@ -1,0 +1,11 @@
+{
+  "name": "micron",
+  "version": "0.1.0",
+  "description": "Tree-sitter grammar for NomadNet Micron markup",
+  "tree-sitter": [
+    {
+      "scope": "source.micron",
+      "file-types": ["mu"]
+    }
+  ]
+}
