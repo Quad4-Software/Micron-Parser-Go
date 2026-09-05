@@ -2,7 +2,7 @@
 
 Dates use YYYY-MM-DD.
 
-## [1.1.0] - 2026-09-05 [unreleased]
+## [1.1.0] - 2026-09-05
 
 ### Added
 
