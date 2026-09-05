@@ -1,0 +1,3 @@
+include micron/libmicron.so
+include micron/libmicron.dylib
+include micron/libmicron.dll

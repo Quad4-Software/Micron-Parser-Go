@@ -1,0 +1,12 @@
+# Copyright Quad4 2026
+# SPDX-License-Identifier: 0BSD
+
+[package]
+name = "micron-sys"
+version = "1.0.7"
+edition = "2021"
+license = "0BSD"
+description = "Low-level FFI bindings to libmicron"
+
+[dependencies]
+libloading = "0.8"

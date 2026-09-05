@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Quad4.Micron</RootNamespace>
+    <AssemblyName>Quad4.Micron</AssemblyName>
+    <Version>1.0.7</Version>
+    <PackageId>Quad4.Micron</PackageId>
+    <Authors>Quad4</Authors>
+    <Description>Micron markup parser and HTML renderer (libmicron bindings)</Description>
+    <PackageLicenseExpression>0BSD</PackageLicenseExpression>
+    <OutputType>Library</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="smoke/**" />
+    <None Include="runtimes\**\*" Pack="true" PackagePath="runtimes\%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

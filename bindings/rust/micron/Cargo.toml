@@ -1,0 +1,18 @@
+# Copyright Quad4 2026
+# SPDX-License-Identifier: 0BSD
+
+[package]
+name = "micron"
+version = "1.0.7"
+edition = "2021"
+license = "0BSD"
+description = "Micron markup parser and HTML renderer"
+
+[dependencies]
+micron-sys = { path = "../micron-sys" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[[bin]]
+name = "micron-smoke"
+path = "src/bin/smoke.rs"

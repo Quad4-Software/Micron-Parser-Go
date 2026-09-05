@@ -1,0 +1,6 @@
+# Copyright Quad4 2026
+# SPDX-License-Identifier: 0BSD
+
+[workspace]
+members = ["micron", "micron-sys"]
+resolver = "2"

@@ -1,0 +1,17 @@
+{
+  "name": "micron-parser",
+  "version": "1.0.7",
+  "description": "Micron markup parser and HTML renderer (libmicron bindings)",
+  "license": "0BSD",
+  "main": "index.js",
+  "files": [
+    "index.js",
+    "native/**"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "koffi": "^2.9.0"
+  }
+}

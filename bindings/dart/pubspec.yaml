@@ -1,0 +1,13 @@
+# Copyright Quad4 2026
+# SPDX-License-Identifier: 0BSD
+
+name: micron
+description: Micron markup parser and HTML renderer (libmicron bindings)
+version: 1.0.7
+repository: https://github.com/Quad4-Software/micron-parser-go
+environment:
+  sdk: ^3.0.0
+dependencies:
+  ffi: ^2.1.0
+executables:
+  micron-smoke: smoke

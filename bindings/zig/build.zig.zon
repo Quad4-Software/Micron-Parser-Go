@@ -1,0 +1,11 @@
+.{
+    .name = .micron,
+    .version = "1.0.7",
+    .fingerprint = 0xa70377ffd83763df,
+    .minimum_zig_version = "0.14.0",
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+    },
+}
