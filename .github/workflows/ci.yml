@@ -1,4 +1,6 @@
-# Linux CI: vet, revive, gosec, tests (race + interop + wasm), fuzz, govulncheck, Go benchmarks.
+# Linux CI: golangci-lint (gofmt/goimports/gosec/revive/staticcheck/...),
+# gofmt check, go vet, go fix check, standalone gosec, tests (race + interop + wasm),
+# fuzz, govulncheck, Go benchmarks.
 #
 # Bump action versions by changing the tag in `uses:` and the SHA in the comment
 # block below (verify with):
@@ -10,8 +12,10 @@
 #   actions/checkout@v6.0.1            8e8c483db84b4bee98b60c0593521ed34d9990e8
 #   actions/setup-go@v6.1.0            4dc6199c7b1a012772edbd06daecab0f50c9053c
 #   actions/setup-node@v6.1.0        395ad3262231945c25e8478fd5baf05154b1d79f
+#   actions/setup-python@v6.0.0      e797f83bcb11b83ae66e0230d6156d7c80228e7c
+#   golangci/golangci-lint-action@v9.2.0  1e7e51e771db61008b38414a730f564565cf7c20
 #
-# Gosec runs via `go install` (same Go as setup-go) because the securego/gosec
+# Gosec also runs via `go install` (same Go as setup-go) because the securego/gosec
 # Docker image may ship an older Go than go.mod requires.
 
 name: CI
@@ -37,12 +41,12 @@ concurrency:
     cancel-in-progress: true
 
 env:
-    GO_VERSION: "1.26.4"
+    GO_VERSION: "1.26.5"
     NODE_VERSION: "22"
     FUZZTIME: ${{ github.event_name == 'schedule' && '120s' || '15s' }}
     GOVULN_VERSION: "v1.3.0"
-    REVIVE_VERSION: "v1.11.0"
     GOSEC_VERSION: "v2.22.10"
+    GOLANGCI_LINT_VERSION: "v2.13.2"
 
 jobs:
     verify:
@@ -55,14 +59,17 @@ jobs:
             fail-fast: false
             matrix:
                 task:
-                    - name: Lint and vet
+                    - name: Lint and format
                       id: lint
-                      timeout: 15
+                      timeout: 20
                     - name: Gosec
                       id: gosec
                       timeout: 15
                     - name: Tests (race + interop + wasm)
                       id: test
+                      timeout: 25
+                    - name: Native bindings smoke
+                      id: bindings
                       timeout: 25
                     - name: Fuzz
                       id: fuzz
@@ -91,10 +98,23 @@ jobs:
                   cache: true
 
             - name: Set up Node
-              if: matrix.task.id == 'test'
+              if: matrix.task.id == 'test' || matrix.task.id == 'bindings'
               uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f
               with:
                   node-version: ${{ env.NODE_VERSION }}
+
+            - name: Set up Python
+              if: matrix.task.id == 'bindings'
+              uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+              with:
+                  python-version: "3.12"
+
+            - name: golangci-lint
+              if: matrix.task.id == 'lint'
+              uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # v9.2.0
+              with:
+                  version: ${{ env.GOLANGCI_LINT_VERSION }}
+                  args: --timeout=10m ./...
 
             - name: Run matrix task
               run: |
@@ -102,18 +122,25 @@ jobs:
                   case "${{ matrix.task.id }}" in
                     lint)
                       make check-vendor-js
+                      make fmt-check
                       go vet ./...
-                      go install github.com/mgechev/revive@${{ env.REVIVE_VERSION }}
-                      "$(go env GOPATH)/bin/revive" -config revive.toml -formatter friendly ./micron/*
+                      go fix -diff ./...
                       ;;
                     gosec)
                       go install github.com/securego/gosec/v2/cmd/gosec@${{ env.GOSEC_VERSION }}
-                      "$(go env GOPATH)/bin/gosec" -exclude-dir=examples ./...
+                      "$(go env GOPATH)/bin/gosec" -exclude-dir=examples -exclude-dir=bindings -exclude=G404,G304,G204,G306,G103 ./...
                       ;;
                     test)
                       go test -count=1 -race ./...
                       go test -count=1 ./micron -run 'TestInteropWithReferenceJS|TestInteropMonospaceVisibleText|TestRegressionCorpus'
                       make test-wasm
+                      ;;
+                    bindings)
+                      make lib
+                      MICRON_LIB_PATH="$(pwd)/dist/libmicron.so" python3 bindings/python/smoke_test.py
+                      (cd bindings/node && npm install --omit=dev --no-fund --no-audit >/dev/null && MICRON_LIB_PATH="$(pwd)/../../dist/libmicron.so" node smoke_test.js)
+                      gcc -o dist/micron_c_smoke bindings/c/smoke.c -Ibindings/c -Ldist -lmicron -Wl,-rpath,'$ORIGIN'
+                      ./dist/micron_c_smoke
                       ;;
                     fuzz)
                       make FUZZTIME="${{ env.FUZZTIME }}" fuzz
