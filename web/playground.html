@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Playground · Micron-Parser-Go</title>
+<meta name="description" content="Edit Micron markup and render HTML via Go WebAssembly in real time.">
+<meta name="robots" content="index,follow">
+<meta property="og:title" content="Playground · Micron-Parser-Go">
+<meta property="og:description" content="Live Micron source and preview panes powered by Go WASM.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://micron-parser-go.quad4.io/playground.html">
+<link rel="stylesheet" href="css/site.css">
+<link rel="stylesheet" href="css/playground.css">
+</head>
+<body class="app-shell">
+<header class="app-header">
+  <h1 class="brand"><a href="./">Micron-Parser-Go</a></h1>
+  <div class="header-links">
+    <a href="./" class="hide-narrow">Home</a>
+    <a id="repo-source-link" href="https://github.com/Quad4-Software/Micron-Parser-Go" target="_blank" rel="noopener noreferrer">Source</a>
+    <a href="bench.html" class="hide-narrow">Bench</a>
+    <button type="button" class="header-action hide-narrow" id="header-download" title="Save current tab as .mu (Ctrl/Cmd+Shift+D)">Download</button>
+    <button type="button" class="header-action hide-xs" id="header-toggle-source" title="Toggle source pane (Ctrl/Cmd+B)">Source pane</button>
+    <span id="status" class="status"></span>
+  </div>
+</header>
+
+<div class="tabs" role="navigation" aria-label="Document tabs">
+  <div class="tab-scroll" id="tab-scroll">
+    <div id="tab-list" class="tab-list" role="tablist" aria-label="Open documents"></div>
+  </div>
+  <button type="button" class="tab-add-btn" id="tab-add" title="New tab (Ctrl/Cmd+T)" aria-label="New tab">+</button>
+</div>
+
+<div class="mobile-viewbar" role="tablist" aria-label="Pane view">
+  <button type="button" class="view-btn" data-view="source" id="view-source">Source</button>
+  <button type="button" class="view-btn" data-view="split" id="view-split">Split</button>
+  <button type="button" class="view-btn" data-view="preview" id="view-preview">Preview</button>
+</div>
+
+<div class="editor-toolbar" role="toolbar" aria-label="Editor tools">
+  <button type="button" class="tool-btn" id="tool-wrap" title="Toggle soft wrap">Wrap</button>
+  <button type="button" class="tool-btn" id="tool-color-pickers" title="Toggle color pickers for #!fg #!bg and inline F/B tags">Colors</button>
+  <button type="button" class="tool-btn" id="tool-font-dec" title="Smaller font">A-</button>
+  <button type="button" class="tool-btn" id="tool-font-inc" title="Larger font">A+</button>
+  <span class="tool-sep hide-xs" aria-hidden="true"></span>
+  <button type="button" class="tool-btn" id="tool-reset" title="Reset tabs to NomadNet Guide and Languages">Reset</button>
+  <button type="button" class="tool-btn" id="tool-show-diag" title="Show diagnostics panel" hidden>Diagnostics</button>
+  <button type="button" class="tool-btn show-narrow" id="tool-download" title="Download .mu">Download</button>
+  <span class="tool-meta" id="editor-meta">0 lines · 0 chars</span>
+</div>
+
+<div class="layout">
+  <section id="source-pane" class="pane" aria-label="Source">
+    <div class="pane-title">
+      <span>Source</span>
+      <span class="pane-stat" id="cursor-stat">Ln 1, Col 1</span>
+    </div>
+    <div class="editor-wrap">
+      <div id="line-numbers" class="line-numbers" aria-hidden="true"></div>
+      <div class="editor-stack" id="editor-stack">
+        <pre id="editor-mirror" class="editor-mirror" aria-hidden="true"></pre>
+        <div id="color-decos" class="color-decos" aria-hidden="true"></div>
+        <textarea id="input" spellcheck="false" aria-label="Micron source" autocomplete="off" autocorrect="off" autocapitalize="off" enterkeyhint="enter"></textarea>
+      </div>
+    </div>
+  </section>
+  <div id="splitter" class="splitter" role="separator" aria-label="Resize panes" aria-orientation="vertical" tabindex="0"></div>
+  <section id="preview-pane" class="pane" aria-label="Preview">
+    <div class="pane-title">
+      <span>Preview</span>
+      <span class="pane-stat" id="render-stat"></span>
+    </div>
+    <div id="preview-wrap">
+      <div id="preview"></div>
+    </div>
+    <div class="diag-panel" id="diag-panel" aria-label="Diagnostics">
+      <div class="diag-title">
+        <button type="button" class="diag-toggle" id="diag-toggle" aria-expanded="true" aria-controls="diag-body" title="Collapse diagnostics">Diagnostics <span id="diag-count">0</span></button>
+        <button type="button" class="diag-close" id="diag-close" title="Hide diagnostics panel" aria-label="Hide diagnostics">×</button>
+      </div>
+      <div id="diag-body">
+        <ul id="diag-list"></ul>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div id="context-menu" role="menu" aria-hidden="true">
+  <div class="ctx-hint">Micron-Parser-Go</div>
+  <button type="button" data-ctx="rename">Rename tab</button>
+  <button type="button" data-ctx="close">Close tab</button>
+  <button type="button" data-ctx="new">New tab</button>
+  <button type="button" data-ctx="toggle-source">Toggle source pane</button>
+  <button type="button" data-ctx="open-repo">Source</button>
+  <button type="button" data-ctx="download">Download .mu</button>
+  <button type="button" data-ctx="copy">Copy source</button>
+</div>
+<div id="multiline-hint">Press Enter again to expand to multi-line</div>
+<script src="wasm_exec.js"></script>
+<script src="js/playground.js?v=colors4"></script>
+</body>
+</html>
