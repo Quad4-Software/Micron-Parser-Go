@@ -2,6 +2,18 @@
 
 Dates use YYYY-MM-DD.
 
+## [1.1.3] - 2026-09-06
+
+### Fixed
+
+- Release CI now also publishes `web/wasm_exec.js` as a standalone asset and includes it plus `micron-parser-go.wasm` in `SHASUMS256.txt`.
+
+## [1.1.2] - 2026-09-06
+
+### Fixed
+
+- Release packaging now includes `SHASUMS256.txt` so downstream builds can verify `micron-parser-go.wasm` without manual asset uploads.
+
 ## [1.1.1] - 2026-09-06
 
 ### Fixed

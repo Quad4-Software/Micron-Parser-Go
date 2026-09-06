@@ -217,7 +217,7 @@ jobs:
               run: |
                   set -euo pipefail
                   mkdir -p release-out
-                  cp micron-parser-go.wasm web.zip release-out/
+                  cp micron-parser-go.wasm web/wasm_exec.js web.zip release-out/
                   find release-natives -type f \( \
                     -name 'libmicron-*' -o -name 'micron.h' -o -name '*.whl' \
                     -o -name '*.tar.gz' -o -name '*.jar' -o -name '*.nupkg' -o -name '*.gem' \
