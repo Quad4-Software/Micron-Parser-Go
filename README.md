@@ -15,7 +15,7 @@ spec/micron.txt
 
 ## Requirements
 
-- Go 1.26.5+
+- Go 1.27.1+
 - Standard library only
 - Node.js (optional, interop / JS bench)
 - Python 3 (optional, NomadNet oracle)

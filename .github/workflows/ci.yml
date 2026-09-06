@@ -41,7 +41,7 @@ concurrency:
     cancel-in-progress: true
 
 env:
-    GO_VERSION: "1.26.5"
+    GO_VERSION: "1.27.1"
     NODE_VERSION: "22"
     FUZZTIME: ${{ github.event_name == 'schedule' && '120s' || '15s' }}
     GOVULN_VERSION: "v1.3.0"

@@ -2,7 +2,11 @@
 
 Dates use YYYY-MM-DD.
 
-## [1.1.3] - 2026-09-06
+## [1.1.3] - 2026-09-TBD
+
+### Changed
+
+- Go toolchain requirement raised to 1.27.1+.
 
 ### Fixed
 
