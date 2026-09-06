@@ -160,7 +160,7 @@ func (p *Parser) writeLink(b *strings.Builder, lk *Link, s *State) {
 		b.WriteString(`"`)
 		appendQuotedHTMLStyleAttr(b, lk.Style, s.DefaultBG)
 		b.WriteString(`>`)
-		b.WriteString(lk.Label)
+		appendHTMLText(b, lk.Label)
 		b.WriteString(`</a>`)
 		return
 	}
@@ -207,7 +207,7 @@ func (p *Parser) writeLink(b *strings.Builder, lk *Link, s *State) {
 	b.WriteString(`"`)
 	appendQuotedHTMLStyleAttr(b, lk.Style, s.DefaultBG)
 	b.WriteString(`>`)
-	b.WriteString(lk.Label)
+	appendHTMLText(b, lk.Label)
 	b.WriteString(`</a>`)
 }
 

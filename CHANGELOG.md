@@ -2,6 +2,12 @@
 
 Dates use YYYY-MM-DD.
 
+## [1.1.1] - 2026-09-06
+
+### Fixed
+
+- PUA/Nerd Font icon glyphs are now wrapped in a span with `font-family:'Roboto Mono Nerd Font',monospace` so they render correctly in browser WASM builds instead of falling back to a font that lacks the glyph.
+
 ## [1.1.0] - 2026-09-05
 
 ### Added
