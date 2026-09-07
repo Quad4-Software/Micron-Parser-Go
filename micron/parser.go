@@ -44,6 +44,14 @@ func (p *Parser) streamHTML(markup string, pc PageColors) string {
 		Align:        "start",
 		DefaultFG:    defaultFG,
 		DefaultBG:    defaultBGVal,
+		FoldOpen:     pc.FoldOpen,
+		FoldClosed:   pc.FoldClosed,
+	}
+	if s.FoldOpen == "" {
+		s.FoldOpen = "▾"
+	}
+	if s.FoldClosed == "" {
+		s.FoldClosed = "▸"
 	}
 	var b strings.Builder
 	n := len(markup)
@@ -72,6 +80,7 @@ func (p *Parser) streamHTML(markup string, pc PageColors) string {
 		p.parseLineInto(&b, line, &s, lineNum)
 		lineNum++
 	}
+	p.closeFolds(&b, &s, 0)
 	b.WriteString(`</div>`)
 	return b.String()
 }

@@ -2,6 +2,16 @@
 
 Dates use YYYY-MM-DD.
 
+## [1.1.4] - 2026-09-07
+
+### Added
+
+- Support for NomadNet 1.4.0 collapsible ("folding") headings:
+  - `+> heading` renders an expanded `<details>` section.
+  - `-> heading` renders a collapsed `<details>` section.
+  - `#!fold open_glyph [closed_glyph]` sets custom fold glyphs.
+- Added `micron/fold_test.go` covering `+>`, `->`, `#!fold`, and nested sections.
+
 ## [1.1.3] - 2026-09-06
 
 ### Changed

@@ -34,22 +34,27 @@ type Style struct {
 
 // State holds parser state across lines.
 type State struct {
-	Literal        bool
-	TableMode      bool
-	TableLines     []string
-	TableOptsAlign string
-	TableOptsMaxW  int
-	Depth          int
-	FGColor        string
-	BGColor        string
-	Formatting     Formatting
-	DefaultAlign   string
-	Align          string
-	DefaultFG      string
-	DefaultBG      string
-	styleAttrMap   map[stateStyleKey]string
-	partsBuf       []linePart
-	partBuf        strings.Builder
+	Literal            bool
+	TableMode          bool
+	TableLines         []string
+	TableOptsAlign     string
+	TableOptsMaxW      int
+	Depth              int
+	FGColor            string
+	BGColor            string
+	Formatting         Formatting
+	DefaultAlign       string
+	Align              string
+	DefaultFG          string
+	DefaultBG          string
+	FoldOpen           string
+	FoldClosed         string
+	FoldStack          []int
+	PendingCollapsible bool
+	PendingCollapsed   bool
+	styleAttrMap       map[stateStyleKey]string
+	partsBuf           []linePart
+	partBuf            strings.Builder
 }
 
 type stateStyleKey struct {

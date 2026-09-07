@@ -24,6 +24,37 @@ func capSectionDepth(depth int) int {
 	return depth
 }
 
+// closeFolds emits </details> tags for all open collapsible sections with depth
+// greater than or equal to the new depth. When depth is 0, close all folds.
+func (p *Parser) closeFolds(out *strings.Builder, s *State, depth int) {
+	for len(s.FoldStack) > 0 {
+		top := s.FoldStack[len(s.FoldStack)-1]
+		if top < depth {
+			break
+		}
+		out.WriteString("</details>")
+		s.FoldStack = s.FoldStack[:len(s.FoldStack)-1]
+	}
+}
+
+// openFold emits the opening <details> and <summary> tags for a collapsible
+// heading. The caller must emit the heading content and then </summary>.
+func (p *Parser) openFold(out *strings.Builder, s *State, collapsed bool) {
+	if collapsed {
+		out.WriteString(`<details class="Mu-fold" data-mu-fold="collapsed">`)
+	} else {
+		out.WriteString(`<details class="Mu-fold" open data-mu-fold="open">`)
+	}
+	out.WriteString(`<summary class="Mu-fold-summary" style="display:block;list-style:none;cursor:pointer;">`)
+	out.WriteString(`<span class="Mu-fold-glyph">`)
+	if collapsed {
+		appendHTMLText(out, s.FoldClosed)
+	} else {
+		appendHTMLText(out, s.FoldOpen)
+	}
+	out.WriteString(`</span>`)
+}
+
 // isLiteralToggleLine reports whether the line is exactly a backtick-= toggle
 // surrounded only by ASCII whitespace, without allocating. Matches
 // micron-parser-js / NomadNet line.trim() === backtick-= without a TrimSpace
@@ -71,6 +102,10 @@ func (p *Parser) parseLineInto(out *strings.Builder, line string, s *State, srcL
 			return lineOmit
 		}
 		preEscape := false
+		collapsible := s.PendingCollapsible
+		collapsed := s.PendingCollapsed
+		s.PendingCollapsible = false
+		s.PendingCollapsed = false
 		if !s.Literal {
 			if line[0] == '>' && strings.Contains(line, "`<") {
 				k := 0
@@ -86,6 +121,16 @@ func (p *Parser) parseLineInto(out *strings.Builder, line string, s *State, srcL
 				line = line[1:]
 				preEscape = true
 			} else if line[0] == '#' {
+				fields := strings.Fields(line)
+				if len(fields) >= 1 && fields[0] == "#!fold" {
+					if len(fields) >= 3 {
+						s.FoldOpen = fields[1]
+						s.FoldClosed = fields[2]
+					} else if len(fields) == 2 {
+						s.FoldOpen = fields[1]
+						s.FoldClosed = fields[1]
+					}
+				}
 				return lineOmit
 			} else if len(line) >= 2 && line[0] == '`' && line[1] == 't' {
 				return p.consumeTableFence(out, line, s, srcLine)
@@ -99,8 +144,13 @@ func (p *Parser) parseLineInto(out *strings.Builder, line string, s *State, srcL
 				}
 				p.writePartial(out, pt, s, srcLine)
 				return lineHTML
+			} else if len(line) >= 3 && line[0] == '`' && (line[1] == '+' || line[1] == '-') && line[2] == '>' {
+				s.PendingCollapsible = true
+				s.PendingCollapsed = line[1] == '-'
+				return p.parseLineInto(out, line[2:], s, srcLine)
 			} else if line[0] == '<' {
 				s.Depth = 0
+				p.closeFolds(out, s, 0)
 				if len(line) == 1 {
 					return lineOmit
 				}
@@ -111,6 +161,7 @@ func (p *Parser) parseLineInto(out *strings.Builder, line string, s *State, srcL
 					i++
 				}
 				s.Depth = capSectionDepth(i)
+				p.closeFolds(out, s, i)
 				headingLine := trimASCIISpaces(line[i:])
 				if headingLine == "" {
 					return lineOmit
@@ -123,6 +174,10 @@ func (p *Parser) parseLineInto(out *strings.Builder, line string, s *State, srcL
 				if !partsHaveContent(parts) {
 					p.styleToState(latched, s)
 					return lineOmit
+				}
+				if collapsible {
+					p.openFold(out, s, collapsed)
+					s.FoldStack = append(s.FoldStack, i)
 				}
 				out.WriteString(`<div`)
 				writeDataMuLine(out, srcLine)
@@ -137,7 +192,12 @@ func (p *Parser) parseLineInto(out *strings.Builder, line string, s *State, srcL
 				appendSectionIndentStyle(out, s)
 				out.WriteString(`">`)
 				p.appendOutput(out, parts, s)
-				out.WriteString(`</div></div><br>`)
+				out.WriteString(`</div></div>`)
+				if collapsible {
+					out.WriteString(`</summary>`)
+				} else {
+					out.WriteString(`<br>`)
+				}
 				return lineHTML
 			} else if line[0] == '-' {
 				if len(line) == 1 {
