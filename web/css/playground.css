@@ -741,6 +741,13 @@ body.preview-only .layout #preview-pane {
   white-space: pre-wrap;
 }
 
+.Mu-mnt-group {
+  display: inline;
+  white-space: pre-wrap;
+  text-decoration: inherit;
+  vertical-align: baseline;
+}
+
 .Mu-partial {
   display: block;
   min-height: 1.2em;

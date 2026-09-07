@@ -108,3 +108,17 @@ func TestCincinnatusAsciiColor(t *testing.T) {
 		t.Fatalf("expected Mu-mnt cell for block-drawing char: %s", out)
 	}
 }
+
+func TestForceMonospacePreservesMultipleSpaces(t *testing.T) {
+	p := Parser{DarkTheme: true, ForceMonospace: true}
+	out := p.ConvertMicronToHTML("█   █")
+	if stripTags(out) != "█   █" {
+		t.Fatalf("multiple spaces must be preserved in output text, got %q", stripTags(out))
+	}
+	if strings.Count(out, `class="Mu-mnt-group"`) != 2 {
+		t.Fatalf("expected two space-only Mu-mnt-group spans, got: %s", out)
+	}
+	if strings.Count(out, `class="Mu-mnt">█`) != 2 {
+		t.Fatalf("expected two block Mu-mnt cells, got: %s", out)
+	}
+}

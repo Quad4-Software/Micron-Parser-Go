@@ -2,6 +2,14 @@
 
 Dates use YYYY-MM-DD.
 
+## [1.1.5] - 2026-09-07
+
+### Fixed
+
+- `ForceMonospace` now preserves multiple consecutive ASCII spaces in Micron markup. Previously, only the first space in a run survived, collapsing ASCII-art whitespace and breaking block-character shading in pages like `shadow`.
+- Plain printable ASCII segments are wrapped in `<span class="Mu-mnt-group">` so the host CSS `white-space: pre-wrap` keeps spacing intact; non-ASCII or HTML-special segments remain in `<span class="Mu-mws">`.
+- Added `.Mu-mnt-group` to the playground CSS so the standalone renderer also keeps whitespace.
+
 ## [1.1.4] - 2026-09-07
 
 ### Added

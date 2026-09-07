@@ -30,12 +30,14 @@ func splitAfterSpaceSegments(s string) []string {
 }
 
 // appendSplitAtSpaces mirrors micron-parser-js splitAtSpaces / wrapWord.
-// Plain printable ASCII words (no & < >) are emitted unchanged. Words that
-// need escaping or contain non-ASCII are wrapped in Mu-mws, with Mu-mnt cells
-// only around complex grapheme clusters and HTML-special bytes.
+// Every space-delimited segment is wrapped in a whitespace-preserving span so
+// multiple consecutive spaces are not collapsed. Plain printable ASCII words
+// (no & < >) use Mu-mnt-group; words that need escaping or contain non-ASCII
+// use Mu-mws with Mu-mnt cells around complex grapheme clusters and HTML-special
+// bytes.
 func (p *Parser) appendSplitAtSpaces(b *strings.Builder, line string) {
 	if line == "" {
-		b.WriteString(`<span class="Mu-mws"></span>`)
+		b.WriteString(`<span class="Mu-mnt-group"></span>`)
 		return
 	}
 	start := 0
@@ -45,7 +47,16 @@ func (p *Parser) appendSplitAtSpaces(b *strings.Builder, line string) {
 		if rel >= 0 {
 			end = start + rel + 1
 		}
-		p.appendWrapWord(b, line[start:end])
+		word := line[start:end]
+		if wordNeedsMonoWrap(word) {
+			b.WriteString(`<span class="Mu-mws">`)
+			p.appendForceMonospace(b, word)
+			b.WriteString(`</span>`)
+		} else {
+			b.WriteString(`<span class="Mu-mnt-group">`)
+			b.WriteString(word)
+			b.WriteString(`</span>`)
+		}
 		start = end
 	}
 }
@@ -58,19 +69,6 @@ func wordNeedsMonoWrap(word string) bool {
 		}
 	}
 	return false
-}
-
-func (p *Parser) appendWrapWord(b *strings.Builder, word string) {
-	if word == "" {
-		return
-	}
-	if !wordNeedsMonoWrap(word) {
-		b.WriteString(word)
-		return
-	}
-	b.WriteString(`<span class="Mu-mws">`)
-	p.appendForceMonospace(b, word)
-	b.WriteString(`</span>`)
 }
 
 // isComplexScriptBase reports scripts that must stay as continuous text runs
