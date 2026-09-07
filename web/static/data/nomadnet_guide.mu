@@ -31,6 +31,7 @@ With micron you can easily create structured documents and pages with formatting
  `F79d`_`[Fields & Requests`#fields-requests]`_`f
  `F79d`_`[Comments`#comments]`_`f
  `F79d`_`[Partials`#partials]`_`f
+ `F79d`_`[Folding Headings`#folding-headings]`_`f
  `F79d`_`[Literals`#literals]`_`f
  `F79d`_`[Closing Remarks`#closing-remarks]`_`f
 
@@ -188,6 +189,25 @@ A sub sub section. We could continue, but you get the point.
 
 >>>>
 Wait! It's worth noting that we can also create sections without headings. They look like this.
+``
+
+
+>>Folding Headings
+
+You can make any heading collapsible by prefixing the line with \`+> for an expanded section or \`-> for a collapsed one. Use \`#!fold glyph_open [glyph_closed] to customise the disclosure glyph.
+
+Here is an example:
+
+`Faaa
+`=
++> Open by default
+This content is visible.
+
+-> Collapsed by default
+This content is hidden until expanded.
+
+#!fold v >
+`=
 ``
 
 
@@ -551,6 +571,7 @@ With micron you can easily create structured documents and pages with formatting
  `F79d`_`[Fields & Requests`#fields-requests]`_`f
  `F79d`_`[Comments`#comments]`_`f
  `F79d`_`[Partials`#partials]`_`f
+ `F79d`_`[Folding Headings`#folding-headings]`_`f
  `F79d`_`[Literals`#literals]`_`f
  `F79d`_`[Closing Remarks`#closing-remarks]`_`f
 
@@ -708,6 +729,25 @@ A sub sub section. We could continue, but you get the point.
 
 >>>>
 Wait! It's worth noting that we can also create sections without headings. They look like this.
+``
+
+
+>>Folding Headings
+
+You can make any heading collapsible by prefixing the line with \`+> for an expanded section or \`-> for a collapsed one. Use \`#!fold glyph_open [glyph_closed] to customise the disclosure glyph.
+
+Here is an example:
+
+`Faaa
+`=
++> Open by default
+This content is visible.
+
+-> Collapsed by default
+This content is hidden until expanded.
+
+#!fold v >
+`=
 ``
 
 
