@@ -13,6 +13,8 @@ import (
 	"micron-parser-go/micron"
 )
 
+var version = "dev"
+
 func main() {
 	convert := js.FuncOf(func(this js.Value, args []js.Value) any {
 		if len(args) < 1 {
@@ -95,6 +97,7 @@ func main() {
 	})
 	js.Global().Set("micronLint", lint)
 	js.Global().Set("micronParse", parseJSON)
+	js.Global().Set("micronVersion", version)
 	select {}
 }
 

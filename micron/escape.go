@@ -4,7 +4,6 @@
 package micron
 
 import (
-	"html"
 	"strings"
 	"unicode/utf8"
 )
@@ -28,10 +27,6 @@ func stripASCIIControls(s string) string {
 		return b.String()
 	}
 	return s
-}
-
-func htmlText(s string) string {
-	return html.EscapeString(stripASCIIControls(s))
 }
 
 // isNerdIconRune returns true for runes in the Private Use Areas that

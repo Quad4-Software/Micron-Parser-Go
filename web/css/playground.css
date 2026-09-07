@@ -727,7 +727,7 @@ body.preview-only .layout #preview-pane {
 
 .Mu-mnt {
   display: inline-block;
-  min-width: 1ch;
+  width: 0.6em;
   text-align: center;
   white-space: pre;
   text-decoration: inherit;

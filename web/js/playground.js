@@ -782,7 +782,8 @@
       const ms = performance.now() - t0;
       applyPreviewChrome();
       hydratePartials(partialRunID);
-      renderStat.textContent = ms.toFixed(1) + " ms";
+      const ver = globalThis.micronVersion || "dev";
+      renderStat.textContent = ms.toFixed(1) + " ms · " + ver;
       renderDiagnostics();
       setStatus("");
     } catch (_) {

@@ -123,7 +123,8 @@ bench-wasm: wasm
 	node ./micron/testdata/bench_wasm_node.js
 
 wasm:
-	GOOS=js GOARCH=wasm go build -trimpath -ldflags="-s -w" -o $(WASM_OUT) ./cmd/wasm
+	VERSION=$$(git describe --tags --always --dirty 2>/dev/null || echo dev); \
+	GOOS=js GOARCH=wasm go build -trimpath -ldflags="-s -w -X main.version=$$VERSION" -o $(WASM_OUT) ./cmd/wasm
 	cp "$(GOROOT)/lib/wasm/wasm_exec.js" $(WASM_JS)
 
 serve-web: wasm

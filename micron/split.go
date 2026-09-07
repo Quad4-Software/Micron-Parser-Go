@@ -29,12 +29,6 @@ func splitAfterSpaceSegments(s string) []string {
 	return out
 }
 
-func (p *Parser) splitAtSpaces(line string) string {
-	var b strings.Builder
-	p.appendSplitAtSpaces(&b, line)
-	return b.String()
-}
-
 // appendSplitAtSpaces mirrors micron-parser-js splitAtSpaces / wrapWord.
 // Plain printable ASCII words (no & < >) are emitted unchanged. Words that
 // need escaping or contain non-ASCII are wrapped in Mu-mws, with Mu-mnt cells
