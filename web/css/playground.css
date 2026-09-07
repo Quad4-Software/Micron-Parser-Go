@@ -737,6 +737,7 @@ body.preview-only .layout #preview-pane {
 .Mu-mws {
   text-decoration: inherit;
   display: inline-block;
+  white-space: pre-wrap;
 }
 
 .Mu-partial {
