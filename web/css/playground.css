@@ -596,6 +596,7 @@ body.preview-only .layout #preview-pane {
   font-size: 0.875rem;
   line-height: 1.45;
   word-wrap: break-word;
+  white-space: pre-wrap;
   flex: 1 1 auto;
   min-height: 100%;
   display: flex;
