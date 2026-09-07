@@ -168,7 +168,7 @@ jobs:
                         mv /tmp/nm/nomadnet-* /tmp/nm/extracted
                       fi
                       sha256sum /tmp/nm/extracted/nomadnet/ui/textui/MicronParser.py > /tmp/nm/current.sha256
-                      diff -u micron/testdata/nm_micronparser_py.sha256 /tmp/nm/current.sha256
+                      diff -u <(cut -d' ' -f1 micron/testdata/nm_micronparser_py.sha256) <(cut -d' ' -f1 /tmp/nm/current.sha256)
                       ;;
                     *)
                       echo "Unknown matrix task: ${{ matrix.task.id }}" >&2
