@@ -40,11 +40,6 @@ func (p *Parser) parseLink(line string, start int, s *State) (skip int, lk *Link
 		label = url
 	}
 	url = FormatNomadnetworkURL(url)
-	if p.ForceMonospace {
-		label = p.splitAtSpaces(label)
-	} else {
-		label = htmlText(label)
-	}
 	var fieldList []string
 	if fields != "" {
 		fieldList = splitPipeList(fields)

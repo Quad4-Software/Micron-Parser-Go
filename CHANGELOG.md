@@ -2,7 +2,7 @@
 
 Dates use YYYY-MM-DD.
 
-## [1.1.3] - 2026-09-TBD
+## [1.1.3] - 2026-09-06
 
 ### Changed
 
@@ -10,6 +10,7 @@ Dates use YYYY-MM-DD.
 
 ### Fixed
 
+- Link labels no longer double-escape ForceMonospace HTML when the label contains non-ASCII or HTML-special characters.
 - Release CI now also publishes `web/wasm_exec.js` as a standalone asset and includes it plus `micron-parser-go.wasm` in `SHASUMS256.txt`.
 
 ## [1.1.2] - 2026-09-06

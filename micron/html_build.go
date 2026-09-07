@@ -160,7 +160,11 @@ func (p *Parser) writeLink(b *strings.Builder, lk *Link, s *State) {
 		b.WriteString(`"`)
 		appendQuotedHTMLStyleAttr(b, lk.Style, s.DefaultBG)
 		b.WriteString(`>`)
-		appendHTMLText(b, lk.Label)
+		if p.ForceMonospace {
+	p.appendSplitAtSpaces(b, lk.Label)
+} else {
+	appendHTMLText(b, lk.Label)
+}
 		b.WriteString(`</a>`)
 		return
 	}
@@ -207,7 +211,11 @@ func (p *Parser) writeLink(b *strings.Builder, lk *Link, s *State) {
 	b.WriteString(`"`)
 	appendQuotedHTMLStyleAttr(b, lk.Style, s.DefaultBG)
 	b.WriteString(`>`)
+	if p.ForceMonospace {
+	p.appendSplitAtSpaces(b, lk.Label)
+} else {
 	appendHTMLText(b, lk.Label)
+}
 	b.WriteString(`</a>`)
 }
 
