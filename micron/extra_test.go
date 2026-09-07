@@ -83,3 +83,28 @@ func TestDoubleBacktickReset(t *testing.T) {
 		t.Fatal(out)
 	}
 }
+
+func TestForceMonospaceLinkLabel(t *testing.T) {
+	p := Parser{DarkTheme: true, ForceMonospace: true}
+	out := p.ConvertMicronToHTML("`!`[" + "  • public`:/page/group.mu`g=public]`! (17 repositories)")
+	if strings.Contains(out, "&lt;span class=&#34;Mu-mws&#34;&gt;") {
+		t.Fatalf("link label must not escape ForceMonospace spans: %s", out)
+	}
+	if !strings.Contains(out, `<a class="Mu-nl"`) {
+		t.Fatalf("expected a Mu-nl link: %s", out)
+	}
+	if !strings.Contains(out, `<span class="Mu-mnt">•</span>`) {
+		t.Fatalf("expected Mu-mnt bullet inside link label: %s", out)
+	}
+}
+
+func TestCincinnatusAsciiColor(t *testing.T) {
+	p := Parser{DarkTheme: true, ForceMonospace: true}
+	out := p.ConvertMicronToHTML("`FEE0\n" + " █████╗")
+	if !strings.Contains(out, "color:#EE0") && !strings.Contains(out, "color:#ee0") {
+		t.Fatalf("expected #EE0 foreground for FEE0: %s", out)
+	}
+	if !strings.Contains(out, `<span class="Mu-mnt">█</span>`) {
+		t.Fatalf("expected Mu-mnt cell for block-drawing char: %s", out)
+	}
+}
