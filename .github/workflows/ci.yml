@@ -45,7 +45,7 @@ env:
     NODE_VERSION: "22"
     FUZZTIME: ${{ github.event_name == 'schedule' && '120s' || '15s' }}
     GOVULN_VERSION: "v1.3.0"
-    GOSEC_VERSION: "v2.22.10"
+    GOSEC_VERSION: "v2.29.0"
     GOLANGCI_LINT_VERSION: "v2.13.2"
 
 jobs:
