@@ -36,6 +36,7 @@ func (p *Parser) parseLink(line string, start int, s *State) (skip int, lk *Link
 	if url == "" {
 		return 0, nil
 	}
+	rawLabel := label
 	if label == "" {
 		label = url
 	}
@@ -44,12 +45,14 @@ func (p *Parser) parseLink(line string, start int, s *State) (skip int, lk *Link
 	if fields != "" {
 		fieldList = splitPipeList(fields)
 	}
-	return end - start + 1, &Link{
+	lk = &Link{
 		URL:    url,
 		Label:  label,
 		Fields: fieldList,
 		Style:  p.stateToStyle(s),
 	}
+	lk.detectImage(rawLabel)
+	return end - start + 1, lk
 }
 
 func splitPipeList(s string) []string {

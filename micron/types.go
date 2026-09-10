@@ -92,6 +92,9 @@ type Link struct {
 	Label  string
 	Fields []string
 	Style  Style
+	// Image is non-nil when the link renders as a deferred image placeholder
+	// instead of an anchor, matching MeshChatX MicronParser image links.
+	Image *LinkImage `json:"image,omitempty"`
 }
 
 // Partial is an asynchronously loaded micron block (placeholder ⧖) with optional

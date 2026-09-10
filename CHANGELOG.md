@@ -2,6 +2,15 @@
 
 Dates use YYYY-MM-DD.
 
+## [1.2.0] - 2026-09-10
+
+### Added
+
+- Image links now render as a deferred placeholder instead of a plain link. A link counts as an image when its fields contain `img=1`/`img=true`/`img=yes`, or when its URL points into a node's `/media/` folder (NomadNet 1.4.2 layout).
+- The placeholder carries `data-mu-image-*` attributes with the URL, path, alt text and the `w`, `h`, `s`, `k`, `a` and `profile` options, plus `role="img"`, an `aria-label`, a `Load image` action and a hidden `<img>` target, matching the markup MeshChatX's JS parser emits so hosts can wire click-to-load without changes.
+- `:/media/` and `hash:/media/` URLs accept `.webp`, `.png`, `.jpg`, `.jpeg`, `.bmp`, `.gif` and `.tiff`. `:/file/` URLs stay WebP-only. Traversal (`..`), control characters, unsafe filename characters and missing alt text keep rendering as a normal link.
+- Added `micron/image_test.go` covering every supported extension, hash-qualified URLs, option parsing and clamping, escaping, and the rejection cases.
+
 ## [1.1.5] - 2026-09-07
 
 ### Fixed
