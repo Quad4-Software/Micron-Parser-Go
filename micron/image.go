@@ -54,16 +54,16 @@ type LinkImage struct {
 }
 
 // clampMicronImageNumber parses a positive finite number, floors it, and
-// clamps it to max. It returns ok=false for anything else, matching the JS
+// clamps it to limit. It returns ok=false for anything else, matching the JS
 // Number() based parsing in parseMicronImageOptions.
-func clampMicronImageNumber(v string, max int) (int, bool) {
+func clampMicronImageNumber(v string, limit int) (int, bool) {
 	n, err := strconv.ParseFloat(strings.TrimSpace(v), 64)
 	if err != nil || math.IsNaN(n) || math.IsInf(n, 0) || n <= 0 {
 		return 0, false
 	}
 	f := math.Floor(n)
-	if f >= float64(max) {
-		return max, true
+	if f >= float64(limit) {
+		return limit, true
 	}
 	return int(f), true
 }
@@ -99,7 +99,7 @@ func parseMicronImageOptions(fields []string) imageOptions {
 		if raw == "" {
 			continue
 		}
-		for _, part := range strings.Split(raw, ";") {
+		for part := range strings.SplitSeq(raw, ";") {
 			idx := strings.IndexByte(part, '=')
 			if idx <= 0 {
 				continue

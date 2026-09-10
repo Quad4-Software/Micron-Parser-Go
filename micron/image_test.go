@@ -26,7 +26,7 @@ func requireImage(t *testing.T, src string) string {
 	return out
 }
 
-func requirePlainLink(t *testing.T, src string) string {
+func requirePlainLink(t *testing.T, src string) {
 	t.Helper()
 	out := convert(t, src)
 	if strings.Contains(out, `class="mu-image"`) {
@@ -35,7 +35,6 @@ func requirePlainLink(t *testing.T, src string) string {
 	if !strings.Contains(out, `class="Mu-nl"`) {
 		t.Fatalf("expected Mu-nl anchor for %q, got %s", src, out)
 	}
-	return out
 }
 
 func TestImageLinkBasic(t *testing.T) {
