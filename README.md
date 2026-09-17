@@ -29,6 +29,9 @@ p := micron.Parser{DarkTheme: true, ForceMonospace: true}
 html := p.ConvertMicronToHTML("> Title\n\nHello `!world`! and `*micron`*.\n")
 ```
 
+Optional flags: `Accessibility` emits heading/separator/partial roles, `aria-level`,
+`aria-label` and `Mu-sr` readable text. `Serif` adds `Mu-serif` to the root element.
+
 Parser is safe to reuse across goroutines. Related APIs:
 
 ```text

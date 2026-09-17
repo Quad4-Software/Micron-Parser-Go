@@ -40,6 +40,17 @@ func micron_convert(markup *C.char, darkTheme, forceMonospace C.int) *C.char {
 	return cString(p.ConvertMicronToHTML(goString(markup)))
 }
 
+//export micron_convert_opts
+func micron_convert_opts(markup *C.char, darkTheme, forceMonospace, accessibility, serif C.int) *C.char {
+	p := micron.Parser{
+		DarkTheme:      darkTheme != 0,
+		ForceMonospace: forceMonospace != 0,
+		Accessibility:  accessibility != 0,
+		Serif:          serif != 0,
+	}
+	return cString(p.ConvertMicronToHTML(goString(markup)))
+}
+
 //export micron_parse_header_tags
 func micron_parse_header_tags(markup *C.char) *C.char {
 	colors := micron.ParseHeaderTags(goString(markup))

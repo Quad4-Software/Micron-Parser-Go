@@ -29,7 +29,15 @@ func main() {
 		if len(args) > 2 {
 			mono = args[2].Bool()
 		}
-		p := micron.Parser{DarkTheme: dark, ForceMonospace: mono}
+		a11y := false
+		if len(args) > 3 {
+			a11y = args[3].Bool()
+		}
+		serif := false
+		if len(args) > 4 {
+			serif = args[4].Bool()
+		}
+		p := micron.Parser{DarkTheme: dark, ForceMonospace: mono, Accessibility: a11y, Serif: serif}
 		return p.ConvertMicronToHTML(markup)
 	})
 	collectFields := js.FuncOf(func(this js.Value, args []js.Value) any {
