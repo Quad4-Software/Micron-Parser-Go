@@ -2,6 +2,32 @@
 
 Dates use YYYY-MM-DD.
 
+## [1.3.0] - 2026-09-17
+
+### Added
+
+- `Parser.Accessibility` option matching micron-parser-js `options.accessibility`. When enabled:
+  - Headings emit `role="heading"` and `aria-level` on the inner div.
+  - Dividers emit `role="separator"`.
+  - Fold glyphs and generated anchors emit `aria-hidden="true"`.
+  - Partial placeholders emit `role="status"`, `aria-live="polite"` and `aria-busy="true"`.
+  - Field inputs and textareas emit `aria-label` with the field name.
+  - Monospace per-segment visual spans are paired with `Mu-sr` readable text so screen readers see coherent words.
+- `Parser.Serif` option adds `Mu-serif` to the root element for serif rendering.
+- Field `WxR` flags: `` `<20x3|bio`text> `` renders a `<textarea rows="3" cols="20">` instead of an `<input>`.
+- Explicit `` `:name `` anchors emit `<a id="name" class="micron-anchor">`.
+- Headings emit a generated slug anchor `<a id="slug" class="micron-anchor micron-header-anchor">` before their content.
+- Links with a bare `#` destination keep `href="#"` and are rewritten to the first following heading slug, matching `_resolveEmptyAnchors`.
+- CRLF and CR input is normalized to LF before parsing.
+- WASM `convert` accepts optional accessibility and serif boolean arguments (4th and 5th).
+- `libmicron` exports `micron_convert_opts` accepting accessibility and serif flags.
+- Vendored reference JS updated to micron-parser-js `ce24ce4`; `web/static/vendor/dompurify.min.js` added since upstream now requires DOMPurify.
+- Added `micron/a11y_test.go` covering the new emit paths.
+
+### Changed
+
+- `FormatNomadnetworkURL` returns `#`-prefixed URLs unchanged instead of wrapping them in `nomadnetwork://`.
+
 ## [1.2.0] - 2026-09-10
 
 ### Added
