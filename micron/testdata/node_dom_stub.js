@@ -103,7 +103,7 @@ globalThis.document = {
   head: { appendChild() {} },
 };
 // DOMPurify 3.x factory shim: upstream calls DOMPurify(window) and expects
-// {addHook, sanitize} back. Pass-through is fine for the interop oracle since
+// {addHook, sanitize} back. Pass-through is fine for the interop tests since
 // the Go parser escapes all emitted markup itself and the corpus is benign.
 globalThis.DOMPurify = () => ({
   addHook() {},

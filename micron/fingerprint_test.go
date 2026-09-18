@@ -11,11 +11,11 @@ import (
 	"testing"
 )
 
-func TestPythonOracleFingerprint(t *testing.T) {
+func TestDocumentFingerprint(t *testing.T) {
 	if _, err := exec.LookPath("python3"); err != nil {
 		t.Skip("python3 not found")
 	}
-	script := filepath.Join("testdata", "python_oracle.py")
+	script := filepath.Join("testdata", "fingerprint.py")
 	cases := []string{
 		"> Title\nBody\n",
 		"`[Go`page.mu]\n",
@@ -34,7 +34,7 @@ func TestPythonOracleFingerprint(t *testing.T) {
 		}
 		out, err := exec.Command("python3", script, tmp).Output()
 		if err != nil {
-			t.Fatalf("python oracle: %v", err)
+			t.Fatalf("fingerprint.py: %v", err)
 		}
 		var py SemanticFingerprint
 		if err := json.Unmarshal(out, &py); err != nil {
@@ -64,7 +64,7 @@ func TestPythonOracleFingerprint(t *testing.T) {
 	}
 }
 
-func TestPythonOracleGuideOptional(t *testing.T) {
+func TestDocumentFingerprintNomadNetGuide(t *testing.T) {
 	if _, err := exec.LookPath("python3"); err != nil {
 		t.Skip("python3 not found")
 	}
@@ -73,10 +73,10 @@ func TestPythonOracleGuideOptional(t *testing.T) {
 	if err != nil {
 		t.Skip(err)
 	}
-	script := filepath.Join("testdata", "python_oracle.py")
+	script := filepath.Join("testdata", "fingerprint.py")
 	out, err := exec.Command("python3", script, path).Output()
 	if err != nil {
-		t.Fatalf("python oracle: %v", err)
+		t.Fatalf("fingerprint.py: %v", err)
 	}
 	var py SemanticFingerprint
 	if err := json.Unmarshal(out, &py); err != nil {

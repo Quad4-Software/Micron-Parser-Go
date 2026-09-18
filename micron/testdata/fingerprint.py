@@ -2,12 +2,12 @@
 # Copyright Quad4 2026
 # SPDX-License-Identifier: 0BSD
 """
-python_oracle.py emits a semantic fingerprint of Micron markup for differential
+fingerprint.py emits a semantic fingerprint of Micron markup for differential
 tests against micron-parser-go.
 
 Authority: NomadNet Python (MicronParser.py / Guide.py) defines the dialect.
 Stock MicronParser.markup_to_attrmaps cannot run headlessly without urwid,
-NomadNetworkApp, RNS, and MarkdownToMicron. This oracle therefore does NOT call
+NomadNetworkApp, RNS, and MarkdownToMicron. This script therefore does NOT call
 the Urwid path. It emits a token-style fingerprint aligned with MicronParser
 line/tag semantics (sections, links, fields, partials, headers) via a stdlib
 scanner so CI works without NomadNet installed.
@@ -16,8 +16,8 @@ Optional: if the nomadnet package imports, nomadnet_installed is true in the
 JSON (presence check only). The fingerprint method remains semantic_scan.
 
 Usage:
-    python3 python_oracle.py < markup.mu
-    python3 python_oracle.py path/to/file.mu
+    python3 fingerprint.py < markup.mu
+    python3 fingerprint.py path/to/file.mu
 
 Output JSON:
     {

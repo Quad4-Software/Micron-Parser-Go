@@ -12,8 +12,8 @@ HTML escaping and control-character stripping are Go host security requirements.
 They may differ from NomadNet's Urwid terminal path without changing dialect meaning.
 
 Stock `MicronParser.markup_to_attrmaps` builds Urwid widgets and needs NomadNet UI
-deps. Conformance oracles use a semantic fingerprint (sections, links, fields,
-partials, headers), not AttrMap trees. See `micron/testdata/python_oracle.py`.
+deps. Conformance checks use a semantic fingerprint (sections, links, fields,
+partials, headers), not AttrMap trees. See `micron/testdata/fingerprint.py`.
 
 ## Modes
 

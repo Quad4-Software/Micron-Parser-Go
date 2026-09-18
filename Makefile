@@ -51,7 +51,7 @@ test-interop:
 	go test -count=1 ./micron -run 'TestInterop'
 
 test-interop-python:
-	go test -count=1 ./micron -run 'TestPythonOracle'
+	go test -count=1 ./micron -run 'TestDocumentFingerprint'
 
 test-wasm: wasm
 	node ./micron/testdata/wasm_smoke.js

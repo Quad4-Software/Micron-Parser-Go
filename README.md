@@ -18,7 +18,7 @@ spec/micron.txt
 - Go 1.27.1+
 - Standard library only
 - Node.js (optional, interop / JS bench)
-- Python 3 (optional, NomadNet oracle)
+- Python 3 (optional, fingerprint parity tests)
 
 ## Usage
 
